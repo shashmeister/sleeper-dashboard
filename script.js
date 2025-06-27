@@ -8,6 +8,12 @@ async function fetchLeagueDetails() {
         const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}`);
         const league = await response.json();
         document.getElementById('league-name').textContent = league.name;
+        
+        // Display additional league details
+        document.getElementById('league-season').textContent = league.season;
+        document.getElementById('league-season-type').textContent = league.season_type;
+        document.getElementById('league-num-teams').textContent = league.settings.num_teams;
+
         return league;
     } catch (error) {
         console.error('Error fetching league details:', error);
@@ -54,7 +60,6 @@ async function displayLeagueInfo() {
                 const teamCard = document.createElement('div');
                 teamCard.classList.add('team-card');
                 teamCard.innerHTML = `<h3>${teamName}</h3>`;
-                // You can add more roster details here later, e.g., total points
                 teamsContainer.appendChild(teamCard);
             }
         });
