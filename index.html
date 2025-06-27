@@ -12,10 +12,12 @@
         <p id="league-name">Loading league name...</p>
     </header>
     <main>
-        <section id="league-info-section">
-            <h2>League Details</h2>
-            <p>Season: <span id="league-season">Loading...</span></p>
-            <p>Number of Teams: <span id="league-num-teams">Loading...</span></p>
+        <section id="recent-picks-section">
+            <h2>Recent Picks</h2>
+            <ul id="recent-picks-list">
+                <!-- Recent picks will be loaded here by JavaScript -->
+                <li>Loading recent picks...</li>
+            </ul>
         </section>
 
         <section id="teams-section">
@@ -24,6 +26,12 @@
                 <!-- Teams will be loaded here by JavaScript -->
                 <p>Loading teams...</p>
             </div>
+        </section>
+
+        <section id="league-info-section">
+            <h2>League Details</h2>
+            <p>Season: <span id="league-season">Loading...</span></p>
+            <p>Number of Teams: <span id="league-num-teams">Loading...</span></p>
         </section>
 
         <section id="draft-info-section">
@@ -35,14 +43,6 @@
                 <!-- Draft order will be loaded here by JavaScript -->
                 <li>Loading draft order...</li>
             </ol>
-        </section>
-
-        <section id="recent-picks-section">
-            <h2>Recent Picks</h2>
-            <ul id="recent-picks-list">
-                <!-- Recent picks will be loaded here by JavaScript -->
-                <li>Loading recent picks...</li>
-            </ul>
         </section>
     </main>
     <script src="script.js"></script>
