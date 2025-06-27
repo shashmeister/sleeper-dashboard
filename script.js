@@ -230,6 +230,29 @@ async function displayLeagueInfo() {
             pickTimerP.textContent = '';
         }
 
+        // Display Draft Progress Bar
+        const draftProgressFill = document.getElementById('draft-progress-fill');
+        const draftProgressText = document.getElementById('draft-progress-text');
+
+        if (draft && draftPicks && league) {
+            const totalRounds = draft.settings.rounds || 0; // Or from draft.draft_rounds if available
+            const numTeams = league.settings.num_teams || 0;
+            const totalPicks = totalRounds * numTeams;
+            const completedPicks = draftPicks.length;
+
+            if (totalPicks > 0) {
+                const progressPercentage = (completedPicks / totalPicks) * 100;
+                draftProgressFill.style.width = `${progressPercentage.toFixed(2)}%`;
+                draftProgressText.textContent = `${progressPercentage.toFixed(0)}% complete (${completedPicks}/${totalPicks} picks)`;
+            } else {
+                draftProgressFill.style.width = '0%';
+                draftProgressText.textContent = '0% complete (0/0 picks)';
+            }
+        } else {
+            draftProgressFill.style.width = '0%';
+            draftProgressText.textContent = '0% complete (0/0 picks)';
+        }
+
         // Display Recent Picks
         const recentPicksList = document.getElementById('recent-picks-list');
         recentPicksList.innerHTML = ''; // Clear loading text
@@ -261,6 +284,9 @@ async function displayLeagueInfo() {
         document.getElementById('on-the-clock').textContent = 'Failed to load';
         document.getElementById('pick-number').textContent = 'Pick: Failed to load';
         document.getElementById('pick-timer').textContent = '';
+        // Update progress bar on failure as well
+        document.getElementById('draft-progress-fill').style.width = '0%';
+        document.getElementById('draft-progress-text').textContent = '0% complete (0/0 picks)';
     }
 }
 

@@ -54,3 +54,27 @@ section {
     color: #007bff;
 }
 
+.progress-bar-container {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+    height: 20px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: #28a745; /* Green */
+    width: 0%; /* Will be set by JavaScript */
+    border-radius: 5px;
+    transition: width 0.5s ease-in-out;
+}
+
+#draft-progress-text {
+    text-align: center;
+    margin-top: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
