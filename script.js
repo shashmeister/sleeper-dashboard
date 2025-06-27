@@ -265,13 +265,21 @@ async function displayLeagueInfo() {
         const recentPicksList = document.getElementById('recent-picks-list');
         recentPicksList.innerHTML = ''; // Clear loading text
 
+        console.log('Debugging Recent Picks:');
+        console.log('draftPicks:', draftPicks);
+        console.log('allPlayers:', allPlayers);
+
         if (draftPicks.length > 0 && allPlayers) {
             // Get the last 5 picks or fewer if less than 5 picks have been made
             const lastFivePicks = draftPicks.slice(-5);
+            console.log('lastFivePicks:', lastFivePicks);
 
             lastFivePicks.reverse().forEach(pick => {
                 const player = allPlayers[pick.player_id];
                 const user = usersMap.get(pick.metadata.owner_id || pick.roster_id); // Use roster_id if owner_id is missing
+                console.log('Processing pick:', pick);
+                console.log('Player for pick:', player);
+                console.log('User for pick:', user);
 
                 if (player && user) {
                     const listItem = document.createElement('li');
