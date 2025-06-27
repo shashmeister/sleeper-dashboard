@@ -117,7 +117,7 @@ async function displayLeagueInfo() {
                     if (!teamDraftedPlayers.has(pick.roster_id)) {
                         teamDraftedPlayers.set(pick.roster_id, []);
                     }
-                    teamDraftedPlayers.get(pick.roster_id).push(player);
+                    teamDraftedPlayers.get(pick.roster_id).push(pick); // Store the entire pick object
                 }
             });
         }
@@ -131,15 +131,24 @@ async function displayLeagueInfo() {
                 teamCard.innerHTML = `<h3>${teamName}</h3>`;
 
                 // Display drafted players for this team from draft.picks
-                const draftedPlayers = teamDraftedPlayers.get(roster.roster_id);
-                if (draftedPlayers && draftedPlayers.length > 0) {
+                const draftedPicks = teamDraftedPlayers.get(roster.roster_id); // Now it's draftedPicks
+                if (draftedPicks && draftedPicks.length > 0) {
                     const playersList = document.createElement('ul');
-                    draftedPlayers.forEach(player => {
+                    // Sort picks by pick_no for consistent display within a team
+                    draftedPicks.sort((a, b) => a.pick_no - b.pick_no).forEach(pick => {
+                        const player = allPlayers[pick.player_id]; // Get player details from allPlayers
+                        if (!player) return; // Skip if player data is somehow missing
+
                         const listItem = document.createElement('li');
                         const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
                         const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
+
+                        // Calculate round number
+                        const numTeams = league.settings.num_teams; // Assuming league object is accessible here
+                        const roundNumber = Math.ceil(pick.pick_no / numTeams);
+
                         listItem.innerHTML = `
-                            <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
+                            Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                             ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
                         `;
                         playersList.appendChild(listItem);
