@@ -262,17 +262,17 @@ async function displayLeagueInfo() {
         }
 
         // Display Recent Picks
-        const recentPicksList = document.getElementById('recent-picks-list');
-        recentPicksList.innerHTML = ''; // Clear loading text
+        const recentPicksContainer = document.getElementById('recent-picks-container');
+        recentPicksContainer.innerHTML = ''; // Clear loading text
 
-        if (draftPicks.length > 0) {
-            // Sort by pick_no descending and take the top N picks (e.g., last 5)
-            const sortedPicks = [...draftPicks].sort((a, b) => b.pick_no - a.pick_no);
-            const recentPicks = sortedPicks.slice(0, 5);
+        if (draftPicks.length > 0 && allPlayers) {
+            // Get the last 5 picks or fewer if less than 5 picks have been made
+            const lastFivePicks = draftPicks.slice(-5);
 
-            recentPicks.forEach(pick => {
+            lastFivePicks.reverse().forEach(pick => {
                 const player = allPlayers[pick.player_id];
-                const user = usersMap.get(pick.picked_by);
+                const user = usersMap.get(pick.metadata.owner_id || pick.roster_id); // Use roster_id if owner_id is missing
+
                 if (player && user) {
                     const listItem = document.createElement('li');
                     const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
@@ -285,11 +285,11 @@ async function displayLeagueInfo() {
                     `;
                     console.log('Recent Pick Player Data:', player);
                     console.log('Recent Pick ListItem HTML:', listItem.innerHTML);
-                    recentPicksList.appendChild(listItem);
+                    recentPicksContainer.appendChild(listItem);
                 }
             });
         } else {
-            recentPicksList.innerHTML = '<li>No picks made yet.</li>';
+            recentPicksContainer.innerHTML = '<p>No recent picks available.</p>';
         }
 
     } else {
@@ -297,7 +297,7 @@ async function displayLeagueInfo() {
         document.getElementById('draft-status').textContent = 'Failed to load';
         document.getElementById('draft-type').textContent = 'Failed to load';
         document.getElementById('draft-order-list').innerHTML = '<li>Failed to load draft order.</li>';
-        document.getElementById('recent-picks-list').innerHTML = '<li>Failed to load recent picks.</li>';
+        document.getElementById('recent-picks-container').innerHTML = '<p>Failed to load recent picks.</p>';
         document.getElementById('on-the-clock').textContent = 'Failed to load';
         document.getElementById('pick-number').textContent = 'Pick: Failed to load';
         document.getElementById('pick-timer').textContent = '';
