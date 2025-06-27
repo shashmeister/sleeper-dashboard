@@ -133,11 +133,13 @@ async function displayLeagueInfo() {
                     const playersList = document.createElement('ul');
                     draftedPlayers.forEach(player => {
                         const listItem = document.createElement('li');
+                        console.log('Team Card Player Data:', player);
                         listItem.innerHTML = `
                             ${player.full_name} (${player.position}, ${player.team || 'N/A'})
                             ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
                             <a href="https://sleeper.app/player/${player.player_id}" target="_blank" rel="noopener noreferrer">Profile</a>
                         `;
+                        console.log('Team Card ListItem HTML:', listItem.innerHTML);
                         playersList.appendChild(listItem);
                     });
                     teamCard.appendChild(playersList);
@@ -271,11 +273,14 @@ async function displayLeagueInfo() {
                 const user = usersMap.get(pick.picked_by);
                 if (player && user) {
                     const listItem = document.createElement('li');
+                    console.log('Recent Pick Player Data:', player);
                     listItem.innerHTML = `
-                        ${player.full_name} (${player.position}, ${player.team || 'N/A'})
+                        Pick ${pick.pick_no} - ${player.full_name} (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
                         <a href="https://sleeper.app/player/${player.player_id}" target="_blank" rel="noopener noreferrer">Profile</a>
+                        by ${user.display_name}
                     `;
+                    console.log('Recent Pick ListItem HTML:', listItem.innerHTML);
                     recentPicksList.appendChild(listItem);
                 }
             });
