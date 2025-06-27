@@ -160,7 +160,7 @@ async function displayLeagueInfo() {
             if (draft.draft_order) {
                 // Map draft_order (user_id -> pick_number) to display_name
                 Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - draft.draft_order[b]).forEach(userId => {
-                    const user = users.find(u => u.user_id === userId);
+                    const user = usersMap.get(userId); // Use usersMap here
                     const pickNumber = draft.draft_order[userId];
                     const listItem = document.createElement('li');
                     listItem.textContent = `Pick ${pickNumber}: ${user ? user.display_name : 'Unknown User'}`;
@@ -175,30 +175,40 @@ async function displayLeagueInfo() {
             draftOrderList.innerHTML = '<li>Draft details could not be loaded.</li>';
         }
 
-        // Debugging for Current Pick
-        console.log('Current Pick - Draft object:', draft);
-        console.log('Current Pick - Draft Picks array:', draftPicks);
-        console.log('Current Pick - Users Map:', usersMap);
-
         // Display Current Pick
         const onTheClockSpan = document.getElementById('on-the-clock');
         const pickNumberSpan = document.getElementById('pick-number');
         const pickTimerP = document.getElementById('pick-timer'); // Placeholder for timer
 
-        if (draft && draft.draft_order && draftPicks) {
-            const currentPickNumber = draftPicks.length + 1;
+        if (draft && draftPicks && usersMap.size > 0 && rosters.length > 0) {
+            const currentPickNumber = draftPicks.length + 1; // The next pick number
+            const numTeams = league.settings.num_teams; // Number of teams in the league
+
             pickNumberSpan.textContent = `Pick: ${currentPickNumber}`;
 
-            let currentPickerUserId = null;
-            // Find the user_id for the current pick number
-            for (const userId in draft.draft_order) {
-                if (draft.draft_order[userId] === currentPickNumber) {
-                    currentPickerUserId = userId;
-                    break;
-                }
+            let currentPickSlot;
+            const currentRound = Math.ceil(currentPickNumber / numTeams);
+            const pickInRound = currentPickNumber % numTeams === 0 ? numTeams : currentPickNumber % numTeams;
+
+            if (draft.type === 'snake' && currentRound % 2 === 0) {
+                // Even rounds for snake draft, pick order reverses
+                currentPickSlot = numTeams - pickInRound + 1;
+            } else {
+                // Odd rounds for snake draft, or linear draft
+                currentPickSlot = pickInRound;
             }
             
-            const currentPicker = usersMap.get(currentPickerUserId);
+            // Find the roster_id from slot_to_roster_id map
+            const currentRosterId = draft.slot_to_roster_id[currentPickSlot];
+            
+            // Find the user_id from the rosters array based on roster_id
+            const currentRoster = rosters.find(r => r.roster_id === parseInt(currentRosterId));
+
+            let currentPicker = null;
+            if (currentRoster) {
+                currentPicker = usersMap.get(currentRoster.owner_id);
+            }
+
             if (currentPicker) {
                 onTheClockSpan.textContent = `${currentPicker.display_name} is on the clock!`;
             } else {
@@ -206,8 +216,6 @@ async function displayLeagueInfo() {
             }
 
             // For the timer, Sleeper API has draft_metadata.pick_start_time and draft_metadata.pick_timer
-            // Implementing a live countdown is more complex and usually involves real-time updates (websockets).
-            // For now, we'll just indicate if a timer is active.
             if (draft.settings.enforce_module_timer) {
                 pickTimerP.textContent = 'Pick timer is active.';
             } else {
