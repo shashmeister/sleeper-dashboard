@@ -175,6 +175,51 @@ async function displayLeagueInfo() {
             draftOrderList.innerHTML = '<li>Draft details could not be loaded.</li>';
         }
 
+        // Debugging for Current Pick
+        console.log('Current Pick - Draft object:', draft);
+        console.log('Current Pick - Draft Picks array:', draftPicks);
+        console.log('Current Pick - Users Map:', usersMap);
+
+        // Display Current Pick
+        const onTheClockSpan = document.getElementById('on-the-clock');
+        const pickNumberSpan = document.getElementById('pick-number');
+        const pickTimerP = document.getElementById('pick-timer'); // Placeholder for timer
+
+        if (draft && draft.draft_order && draftPicks) {
+            const currentPickNumber = draftPicks.length + 1;
+            pickNumberSpan.textContent = `Pick: ${currentPickNumber}`;
+
+            let currentPickerUserId = null;
+            // Find the user_id for the current pick number
+            for (const userId in draft.draft_order) {
+                if (draft.draft_order[userId] === currentPickNumber) {
+                    currentPickerUserId = userId;
+                    break;
+                }
+            }
+            
+            const currentPicker = usersMap.get(currentPickerUserId);
+            if (currentPicker) {
+                onTheClockSpan.textContent = `${currentPicker.display_name} is on the clock!`;
+            } else {
+                onTheClockSpan.textContent = 'Unknown manager on the clock.';
+            }
+
+            // For the timer, Sleeper API has draft_metadata.pick_start_time and draft_metadata.pick_timer
+            // Implementing a live countdown is more complex and usually involves real-time updates (websockets).
+            // For now, we'll just indicate if a timer is active.
+            if (draft.settings.enforce_module_timer) {
+                pickTimerP.textContent = 'Pick timer is active.';
+            } else {
+                pickTimerP.textContent = 'No pick timer enforced.';
+            }
+
+        } else {
+            onTheClockSpan.textContent = 'Draft not in progress or details unavailable.';
+            pickNumberSpan.textContent = 'Pick: N/A';
+            pickTimerP.textContent = '';
+        }
+
         // Display Recent Picks
         const recentPicksList = document.getElementById('recent-picks-list');
         recentPicksList.innerHTML = ''; // Clear loading text
@@ -203,6 +248,9 @@ async function displayLeagueInfo() {
         document.getElementById('draft-type').textContent = 'Failed to load';
         document.getElementById('draft-order-list').innerHTML = '<li>Failed to load draft order.</li>';
         document.getElementById('recent-picks-list').innerHTML = '<li>Failed to load recent picks.</li>';
+        document.getElementById('on-the-clock').textContent = 'Failed to load';
+        document.getElementById('pick-number').textContent = 'Pick: Failed to load';
+        document.getElementById('pick-timer').textContent = '';
     }
 }
 
