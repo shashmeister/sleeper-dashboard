@@ -70,18 +70,32 @@ async function fetchDraftDetails(draftId) {
     }
 }
 
+async function fetchDraftPicks(draftId) {
+    if (!draftId) {
+        console.warn('No draft ID provided. Cannot fetch draft picks.');
+        return [];
+    }
+    try {
+        const response = await fetch(`${SLEEPER_API_BASE}/draft/${draftId}/picks`);
+        const picks = await response.json();
+        return picks;
+    } catch (error) {
+        console.error('Error fetching draft picks:', error);
+        return [];
+    }
+}
+
 async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
     const users = await fetchUsers();
     const allPlayers = await fetchAllPlayers(); // Fetch all players here
 
-    console.log('Fetched Rosters:', rosters);
-    console.log('Fetched All Players:', allPlayers);
-
     let draft = null;
+    let draftPicks = [];
     if (league && league.draft_id) {
         draft = await fetchDraftDetails(league.draft_id);
+        draftPicks = await fetchDraftPicks(league.draft_id);
     }
 
     if (league && rosters.length > 0 && users.length > 0) {
@@ -93,8 +107,8 @@ async function displayLeagueInfo() {
 
         // Process draft picks to get drafted players for each team
         const teamDraftedPlayers = new Map(); // Map: roster_id -> [player objects]
-        if (draft && draft.picks) {
-            draft.picks.forEach(pick => {
+        if (draftPicks.length > 0) {
+            draftPicks.forEach(pick => {
                 const player = allPlayers[pick.player_id];
                 if (player) {
                     if (!teamDraftedPlayers.has(pick.roster_id)) {
