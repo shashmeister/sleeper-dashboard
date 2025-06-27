@@ -3,6 +3,18 @@
 const LEAGUE_ID = '1229429982934077440'; // Your league ID
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
+async function fetchAllPlayers() {
+    try {
+        // Fetch all NFL players. This dataset is large but necessary to map player IDs to names.
+        const response = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
+        const players = await response.json();
+        return players;
+    } catch (error) {
+        console.error('Error fetching all players:', error);
+        return {};
+    }
+}
+
 async function fetchLeagueDetails() {
     try {
         const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}`);
@@ -62,6 +74,7 @@ async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
     const users = await fetchUsers();
+    const allPlayers = await fetchAllPlayers(); // Fetch all players here
 
     let draft = null;
     if (league && league.draft_id) {
@@ -79,6 +92,31 @@ async function displayLeagueInfo() {
                 const teamCard = document.createElement('div');
                 teamCard.classList.add('team-card');
                 teamCard.innerHTML = `<h3>${teamName}</h3>`;
+
+                // Display drafted players
+                if (roster.players && roster.players.length > 0) {
+                    const playersList = document.createElement('ul');
+                    roster.players.forEach(playerId => {
+                        const player = allPlayers[playerId];
+                        if (player) {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = `${player.full_name} (${player.position})`;
+                            playersList.appendChild(listItem);
+                        }
+                    });
+                    if (playersList.children.length > 0) {
+                        teamCard.appendChild(playersList);
+                    } else {
+                        const p = document.createElement('p');
+                        p.textContent = 'No players drafted yet.';
+                        teamCard.appendChild(p);
+                    }
+                } else {
+                    const p = document.createElement('p');
+                    p.textContent = 'No players drafted yet.';
+                    teamCard.appendChild(p);
+                }
+
                 teamsContainer.appendChild(teamCard);
             }
         });
