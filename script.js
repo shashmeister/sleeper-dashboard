@@ -133,7 +133,11 @@ async function displayLeagueInfo() {
                     const playersList = document.createElement('ul');
                     draftedPlayers.forEach(player => {
                         const listItem = document.createElement('li');
-                        listItem.textContent = `${player.full_name} (${player.position})`;
+                        listItem.innerHTML = `
+                            ${player.full_name} (${player.position}, ${player.team || 'N/A'})
+                            ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
+                            <a href="https://sleeper.app/player/${player.player_id}" target="_blank" rel="noopener noreferrer">Profile</a>
+                        `;
                         playersList.appendChild(listItem);
                     });
                     teamCard.appendChild(playersList);
@@ -267,7 +271,11 @@ async function displayLeagueInfo() {
                 const user = usersMap.get(pick.picked_by);
                 if (player && user) {
                     const listItem = document.createElement('li');
-                    listItem.textContent = `Pick ${pick.pick_no} - ${player.full_name} (${player.position}) by ${user.display_name}`;
+                    listItem.innerHTML = `
+                        ${player.full_name} (${player.position}, ${player.team || 'N/A'})
+                        ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
+                        <a href="https://sleeper.app/player/${player.player_id}" target="_blank" rel="noopener noreferrer">Profile</a>
+                    `;
                     recentPicksList.appendChild(listItem);
                 }
             });
