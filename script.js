@@ -43,10 +43,30 @@ async function fetchUsers() {
     }
 }
 
+async function fetchDraftDetails(draftId) {
+    if (!draftId) {
+        console.warn('No draft ID provided. Cannot fetch draft details.');
+        return null;
+    }
+    try {
+        const response = await fetch(`${SLEEPER_API_BASE}/draft/${draftId}`);
+        const draft = await response.json();
+        return draft;
+    } catch (error) {
+        console.error('Error fetching draft details:', error);
+        return null;
+    }
+}
+
 async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
     const users = await fetchUsers();
+
+    let draft = null;
+    if (league && league.draft_id) {
+        draft = await fetchDraftDetails(league.draft_id);
+    }
 
     if (league && rosters.length > 0 && users.length > 0) {
         const teamsContainer = document.getElementById('teams-container');
@@ -62,8 +82,40 @@ async function displayLeagueInfo() {
                 teamsContainer.appendChild(teamCard);
             }
         });
+
+        // Display Draft Details
+        const draftStatusSpan = document.getElementById('draft-status');
+        const draftTypeSpan = document.getElementById('draft-type');
+        const draftOrderList = document.getElementById('draft-order-list');
+
+        if (draft) {
+            draftStatusSpan.textContent = draft.status;
+            draftTypeSpan.textContent = draft.type;
+            draftOrderList.innerHTML = ''; // Clear loading text
+
+            if (draft.draft_order) {
+                // Map draft_order (user_id -> pick_number) to display_name
+                Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - draft.draft_order[b]).forEach(userId => {
+                    const user = users.find(u => u.user_id === userId);
+                    const pickNumber = draft.draft_order[userId];
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `Pick ${pickNumber}: ${user ? user.display_name : 'Unknown User'}`;
+                    draftOrderList.appendChild(listItem);
+                });
+            } else {
+                draftOrderList.innerHTML = '<li>Draft order not yet available or configured.</li>';
+            }
+        } else {
+            draftStatusSpan.textContent = 'N/A';
+            draftTypeSpan.textContent = 'N/A';
+            draftOrderList.innerHTML = '<li>Draft details could not be loaded.</li>';
+        }
+
     } else {
         document.getElementById('teams-container').innerHTML = '<p>Could not load league data. Please check the league ID or try again later.</p>';
+        document.getElementById('draft-status').textContent = 'Failed to load';
+        document.getElementById('draft-type').textContent = 'Failed to load';
+        document.getElementById('draft-order-list').innerHTML = '<li>Failed to load draft order.</li>';
     }
 }
 
