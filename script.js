@@ -217,9 +217,11 @@ async function displayLeagueInfo() {
 
             // For the timer, Sleeper API has draft_metadata.pick_start_time and draft_metadata.pick_timer
             if (draft.settings.enforce_module_timer) {
-                pickTimerP.textContent = 'Pick timer is active.';
+                // If you want to implement a live timer later, this is where you'd do it.
+                // For now, we'll leave this empty.
+                // pickTimerP.textContent = 'Pick timer is active.'; 
             } else {
-                pickTimerP.textContent = 'No pick timer enforced.';
+                pickTimerP.textContent = ''; // Clear the message if no timer enforced
             }
 
         } else {
