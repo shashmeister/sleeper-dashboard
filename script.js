@@ -1,6 +1,6 @@
 // JavaScript Document
 
-const LEAGUE_ID = '1229429984066555904'; // Your league ID
+const LEAGUE_ID = '1229429982934077440'; // Your league ID
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
 async function fetchLeagueDetails() {
