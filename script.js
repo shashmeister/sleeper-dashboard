@@ -292,8 +292,13 @@ async function displayLeagueInfo() {
                     const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
                     const rosterForPick = rostersByUserIdMap.get(userIdForPick);
                     const teamNameForPick = rosterForPick?.metadata?.team_name || user.display_name || 'Unknown Team';
+
+                    // Calculate round number
+                    const numTeams = league.settings.num_teams; // Assuming league object is accessible here
+                    const roundNumber = Math.ceil(pick.pick_no / numTeams);
+
                     listItem.innerHTML = `
-                        Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
+                        Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
                         by ${teamNameForPick}
                     `;
