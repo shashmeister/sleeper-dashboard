@@ -105,6 +105,9 @@ async function displayLeagueInfo() {
         // Create a map to easily look up users by user_id
         const usersMap = new Map(users.map(user => [user.user_id, user]));
 
+        // Create a map to easily look up rosters by user_id
+        const rostersByUserIdMap = new Map(rosters.map(roster => [roster.owner_id, roster]));
+
         // Process draft picks to get drafted players for each team
         const teamDraftedPlayers = new Map(); // Map: roster_id -> [player objects]
         if (draftPicks.length > 0) {
@@ -122,7 +125,7 @@ async function displayLeagueInfo() {
         rosters.forEach(roster => {
             const user = usersMap.get(roster.owner_id);
             if (user) {
-                const teamName = user.display_name || 'Unnamed Team';
+                const teamName = roster.metadata.team_name || user.display_name || 'Unnamed Team';
                 const teamCard = document.createElement('div');
                 teamCard.classList.add('team-card');
                 teamCard.innerHTML = `<h3>${teamName}</h3>`;
@@ -163,12 +166,14 @@ async function displayLeagueInfo() {
             draftOrderList.innerHTML = ''; // Clear loading text
 
             if (draft.draft_order) {
-                // Map draft_order (user_id -> pick_number) to display_name
+                // Map draft_order (user_id -> pick_number) to display_name or team_name
                 Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - draft.draft_order[b]).forEach(userId => {
                     const user = usersMap.get(userId); // Use usersMap here
+                    const rosterForDraftOrder = rostersByUserIdMap.get(userId);
+                    const teamNameForDraftOrder = rosterForDraftOrder ? rosterForDraftOrder.metadata.team_name || user.display_name : 'Unknown Team';
                     const pickNumber = draft.draft_order[userId];
                     const listItem = document.createElement('li');
-                    listItem.textContent = `Pick ${pickNumber}: ${user ? user.display_name : 'Unknown User'}`;
+                    listItem.textContent = `Pick ${pickNumber}: ${teamNameForDraftOrder}`;
                     draftOrderList.appendChild(listItem);
                 });
             } else {
@@ -210,12 +215,14 @@ async function displayLeagueInfo() {
             const currentRoster = rosters.find(r => r.roster_id === parseInt(currentRosterId));
 
             let currentPicker = null;
+            let currentPickerTeamName = 'Unknown Manager';
             if (currentRoster) {
                 currentPicker = usersMap.get(currentRoster.owner_id);
+                currentPickerTeamName = currentRoster.metadata.team_name || currentPicker.display_name || 'Unknown Manager';
             }
 
             if (currentPicker) {
-                onTheClockSpan.textContent = `${currentPicker.display_name} is on the clock!`;
+                onTheClockSpan.textContent = `${currentPickerTeamName} is on the clock!`;
             } else {
                 onTheClockSpan.textContent = 'Unknown manager on the clock.';
             }
@@ -283,10 +290,12 @@ async function displayLeagueInfo() {
                     const listItem = document.createElement('li');
                     const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
                     const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
+                    const rosterForPick = rostersByUserIdMap.get(userIdForPick);
+                    const teamNameForPick = rosterForPick ? rosterForPick.metadata.team_name || user.display_name : 'Unknown Team';
                     listItem.innerHTML = `
                         Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                        by ${user.display_name}
+                        by ${teamNameForPick}
                     `;
                     recentPicksList.appendChild(listItem);
                 }
