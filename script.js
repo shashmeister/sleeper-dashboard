@@ -125,7 +125,7 @@ async function displayLeagueInfo() {
         rosters.forEach(roster => {
             const user = usersMap.get(roster.owner_id);
             if (user) {
-                const teamName = roster.metadata.team_name || user.display_name || 'Unnamed Team';
+                const teamName = roster.metadata?.team_name || user.display_name || 'Unnamed Team';
                 const teamCard = document.createElement('div');
                 teamCard.classList.add('team-card');
                 teamCard.innerHTML = `<h3>${teamName}</h3>`;
@@ -170,7 +170,7 @@ async function displayLeagueInfo() {
                 Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - draft.draft_order[b]).forEach(userId => {
                     const user = usersMap.get(userId); // Use usersMap here
                     const rosterForDraftOrder = rostersByUserIdMap.get(userId);
-                    const teamNameForDraftOrder = rosterForDraftOrder ? rosterForDraftOrder.metadata.team_name || user.display_name : 'Unknown Team';
+                    const teamNameForDraftOrder = rosterForDraftOrder?.metadata?.team_name || user.display_name || 'Unknown Team';
                     const pickNumber = draft.draft_order[userId];
                     const listItem = document.createElement('li');
                     listItem.textContent = `Pick ${pickNumber}: ${teamNameForDraftOrder}`;
@@ -218,7 +218,7 @@ async function displayLeagueInfo() {
             let currentPickerTeamName = 'Unknown Manager';
             if (currentRoster) {
                 currentPicker = usersMap.get(currentRoster.owner_id);
-                currentPickerTeamName = currentRoster.metadata.team_name || currentPicker.display_name || 'Unknown Manager';
+                currentPickerTeamName = currentRoster.metadata?.team_name || currentPicker.display_name || 'Unknown Manager';
             }
 
             if (currentPicker) {
@@ -291,7 +291,7 @@ async function displayLeagueInfo() {
                     const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
                     const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
                     const rosterForPick = rostersByUserIdMap.get(userIdForPick);
-                    const teamNameForPick = rosterForPick ? rosterForPick.metadata.team_name || user.display_name : 'Unknown Team';
+                    const teamNameForPick = rosterForPick?.metadata?.team_name || user.display_name || 'Unknown Team';
                     listItem.innerHTML = `
                         Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
