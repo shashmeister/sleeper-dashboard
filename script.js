@@ -88,34 +88,41 @@ async function displayLeagueInfo() {
         const teamsContainer = document.getElementById('teams-container');
         teamsContainer.innerHTML = ''; // Clear loading text
 
+        // Create a map to easily look up users by user_id
+        const usersMap = new Map(users.map(user => [user.user_id, user]));
+
+        // Process draft picks to get drafted players for each team
+        const teamDraftedPlayers = new Map(); // Map: roster_id -> [player objects]
+        if (draft && draft.picks) {
+            draft.picks.forEach(pick => {
+                const player = allPlayers[pick.player_id];
+                if (player) {
+                    if (!teamDraftedPlayers.has(pick.roster_id)) {
+                        teamDraftedPlayers.set(pick.roster_id, []);
+                    }
+                    teamDraftedPlayers.get(pick.roster_id).push(player);
+                }
+            });
+        }
+
         rosters.forEach(roster => {
-            const user = users.find(u => u.user_id === roster.owner_id);
+            const user = usersMap.get(roster.owner_id);
             if (user) {
                 const teamName = user.display_name || 'Unnamed Team';
                 const teamCard = document.createElement('div');
                 teamCard.classList.add('team-card');
                 teamCard.innerHTML = `<h3>${teamName}</h3>`;
 
-                // Display drafted players
-                console.log(`Roster players for ${teamName}:`, roster.players);
-                if (roster.players && roster.players.length > 0) {
+                // Display drafted players for this team from draft.picks
+                const draftedPlayers = teamDraftedPlayers.get(roster.roster_id);
+                if (draftedPlayers && draftedPlayers.length > 0) {
                     const playersList = document.createElement('ul');
-                    roster.players.forEach(playerId => {
-                        const player = allPlayers[playerId];
-                        console.log(`Player ID: ${playerId}, Player Data:`, player);
-                        if (player) {
-                            const listItem = document.createElement('li');
-                            listItem.textContent = `${player.full_name} (${player.position})`;
-                            playersList.appendChild(listItem);
-                        }
+                    draftedPlayers.forEach(player => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${player.full_name} (${player.position})`;
+                        playersList.appendChild(listItem);
                     });
-                    if (playersList.children.length > 0) {
-                        teamCard.appendChild(playersList);
-                    } else {
-                        const p = document.createElement('p');
-                        p.textContent = 'No players drafted yet.';
-                        teamCard.appendChild(p);
-                    }
+                    teamCard.appendChild(playersList);
                 } else {
                     const p = document.createElement('p');
                     p.textContent = 'No players drafted yet.';
