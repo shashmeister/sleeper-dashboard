@@ -138,6 +138,8 @@ async function displayLeagueInfo() {
                             ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
                             <a href="https://sleeper.app/player/${player.player_id}" target="_blank" rel="noopener noreferrer">Profile</a>
                         `;
+                        console.log('Team Card Player Data:', player);
+                        console.log('Team Card ListItem HTML:', listItem.innerHTML);
                         playersList.appendChild(listItem);
                     });
                     teamCard.appendChild(playersList);
@@ -277,6 +279,8 @@ async function displayLeagueInfo() {
                         <a href="https://sleeper.app/player/${player.player_id}" target="_blank" rel="noopener noreferrer">Profile</a>
                         by ${user.display_name}
                     `;
+                    console.log('Recent Pick Player Data:', player);
+                    console.log('Recent Pick ListItem HTML:', listItem.innerHTML);
                     recentPicksList.appendChild(listItem);
                 }
             });
