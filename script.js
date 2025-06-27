@@ -76,6 +76,9 @@ async function displayLeagueInfo() {
     const users = await fetchUsers();
     const allPlayers = await fetchAllPlayers(); // Fetch all players here
 
+    console.log('Fetched Rosters:', rosters);
+    console.log('Fetched All Players:', allPlayers);
+
     let draft = null;
     if (league && league.draft_id) {
         draft = await fetchDraftDetails(league.draft_id);
@@ -94,10 +97,12 @@ async function displayLeagueInfo() {
                 teamCard.innerHTML = `<h3>${teamName}</h3>`;
 
                 // Display drafted players
+                console.log(`Roster players for ${teamName}:`, roster.players);
                 if (roster.players && roster.players.length > 0) {
                     const playersList = document.createElement('ul');
                     roster.players.forEach(playerId => {
                         const player = allPlayers[playerId];
+                        console.log(`Player ID: ${playerId}, Player Data:`, player);
                         if (player) {
                             const listItem = document.createElement('li');
                             listItem.textContent = `${player.full_name} (${player.position})`;
