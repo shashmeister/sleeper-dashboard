@@ -175,11 +175,34 @@ async function displayLeagueInfo() {
             draftOrderList.innerHTML = '<li>Draft details could not be loaded.</li>';
         }
 
+        // Display Recent Picks
+        const recentPicksList = document.getElementById('recent-picks-list');
+        recentPicksList.innerHTML = ''; // Clear loading text
+
+        if (draftPicks.length > 0) {
+            // Sort by pick_no descending and take the top N picks (e.g., last 5)
+            const sortedPicks = [...draftPicks].sort((a, b) => b.pick_no - a.pick_no);
+            const recentPicks = sortedPicks.slice(0, 5);
+
+            recentPicks.forEach(pick => {
+                const player = allPlayers[pick.player_id];
+                const user = usersMap.get(pick.picked_by);
+                if (player && user) {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `Pick ${pick.pick_no} - ${player.full_name} (${player.position}) by ${user.display_name}`;
+                    recentPicksList.appendChild(listItem);
+                }
+            });
+        } else {
+            recentPicksList.innerHTML = '<li>No picks made yet.</li>';
+        }
+
     } else {
         document.getElementById('teams-container').innerHTML = '<p>Could not load league data. Please check the league ID or try again later.</p>';
         document.getElementById('draft-status').textContent = 'Failed to load';
         document.getElementById('draft-type').textContent = 'Failed to load';
         document.getElementById('draft-order-list').innerHTML = '<li>Failed to load draft order.</li>';
+        document.getElementById('recent-picks-list').innerHTML = '<li>Failed to load recent picks.</li>';
     }
 }
 
