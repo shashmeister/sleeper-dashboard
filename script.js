@@ -136,12 +136,9 @@ async function displayLeagueInfo() {
                         const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
                         const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
                         listItem.innerHTML = `
-                            ${player.full_name} (${player.position}, ${player.team || 'N/A'})
+                            <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                             ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                            <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">Profile</a>
                         `;
-                        console.log('Team Card Player Data:', player);
-                        console.log('Team Card ListItem HTML:', listItem.innerHTML);
                         playersList.appendChild(listItem);
                     });
                     teamCard.appendChild(playersList);
@@ -287,13 +284,10 @@ async function displayLeagueInfo() {
                     const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
                     const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
                     listItem.innerHTML = `
-                        Pick ${pick.pick_no} - ${player.full_name} (${player.position}, ${player.team || 'N/A'})
+                        Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                        <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">Profile</a>
                         by ${user.display_name}
                     `;
-                    console.log('Recent Pick Player Data:', player);
-                    console.log('Recent Pick ListItem HTML:', listItem.innerHTML);
                     recentPicksList.appendChild(listItem);
                 }
             });
