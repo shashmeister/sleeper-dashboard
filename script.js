@@ -133,10 +133,12 @@ async function displayLeagueInfo() {
                     const playersList = document.createElement('ul');
                     draftedPlayers.forEach(player => {
                         const listItem = document.createElement('li');
+                        const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
+                        const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
                         listItem.innerHTML = `
                             ${player.full_name} (${player.position}, ${player.team || 'N/A'})
                             ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                            <a href="https://sleeper.app/player/${player.player_id}" target="_blank" rel="noopener noreferrer">Profile</a>
+                            <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">Profile</a>
                         `;
                         console.log('Team Card Player Data:', player);
                         console.log('Team Card ListItem HTML:', listItem.innerHTML);
@@ -273,10 +275,12 @@ async function displayLeagueInfo() {
                 const user = usersMap.get(pick.picked_by);
                 if (player && user) {
                     const listItem = document.createElement('li');
+                    const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
+                    const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
                     listItem.innerHTML = `
                         Pick ${pick.pick_no} - ${player.full_name} (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                        <a href="https://sleeper.app/player/${player.player_id}" target="_blank" rel="noopener noreferrer">Profile</a>
+                        <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">Profile</a>
                         by ${user.display_name}
                     `;
                     console.log('Recent Pick Player Data:', player);
