@@ -11,7 +11,6 @@ async function fetchLeagueDetails() {
         
         // Display additional league details
         document.getElementById('league-season').textContent = league.season;
-        document.getElementById('league-season-type').textContent = league.season_type;
         document.getElementById('league-num-teams').textContent = league.settings.num_teams;
 
         return league;
