@@ -3,18 +3,6 @@
 const LEAGUE_ID = '1229429982934077440'; // Your league ID
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
-async function fetchAllPlayers() {
-    try {
-        // Fetch all NFL players. This dataset is large but necessary to map player IDs to names.
-        const response = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
-        const players = await response.json();
-        return players;
-    } catch (error) {
-        console.error('Error fetching all players:', error);
-        return {};
-    }
-}
-
 async function fetchLeagueDetails() {
     try {
         const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}`);
@@ -86,7 +74,7 @@ async function fetchDraftPicks(draftId) {
 }
 
 // New function to display players by round
-async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters) {
+async function displayPlayersByRound(draftPicks, usersMap, rostersByUserIdMap, league, rosters) {
     const playersByRoundContainer = document.getElementById('players-by-round-container');
     playersByRoundContainer.innerHTML = ''; // Clear previous content
 
@@ -116,7 +104,6 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
 
         const picksList = document.createElement('ul');
         picksByRound.get(roundNumber).forEach(pick => {
-            const player = allPlayers[pick.player_id];
             let userIdForPick = pick.metadata.owner_id;
             if (!userIdForPick) {
                 const pickRoster = rosters.find(r => r.roster_id === pick.roster_id);
@@ -128,18 +115,11 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
             const rosterForPick = rostersByUserIdMap.get(userIdForPick);
             const teamNameForPick = rosterForPick?.metadata?.team_name || (user ? user.display_name : 'Unknown Team');
 
-            if (player) {
-                const listItem = document.createElement('li');
-                const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
-                const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
-
-                listItem.innerHTML = `
-                    Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
-                    ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                    by ${teamNameForPick}
-                `;
-                picksList.appendChild(listItem);
-            }
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `
+                Pick ${pick.pick_no} - Player ID: ${pick.player_id} by ${teamNameForPick}
+            `;
+            picksList.appendChild(listItem);
         });
         roundDiv.appendChild(picksList);
         playersByRoundContainer.appendChild(roundDiv);
@@ -147,7 +127,7 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
 }
 
 // Existing logic for displaying players by team, refactored into a new function
-async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, teamsContainer) {
+async function displayPlayersByTeam(rosters, users, usersMap, teamDraftedPlayers, teamsContainer) {
     teamsContainer.innerHTML = ''; // Clear previous content, including the "Loading teams..." message
     rosters.forEach(roster => {
         const user = usersMap.get(roster.owner_id);
@@ -161,19 +141,13 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
             if (draftedPicks && draftedPicks.length > 0) {
                 const playersList = document.createElement('ul');
                 draftedPicks.sort((a, b) => a.pick_no - b.pick_no).forEach(pick => {
-                    const player = allPlayers[pick.player_id];
-                    if (!player) return;
-
                     const listItem = document.createElement('li');
-                    const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
-                    const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
 
                     const numTeams = users.length; // Use users.length for numTeams, as league might not be available here directly
                     const roundNumber = Math.ceil(pick.pick_no / numTeams);
 
                     listItem.innerHTML = `
-                        Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
-                        ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
+                        Round ${roundNumber}, Pick ${pick.pick_no} - Player ID: ${pick.player_id}
                     `;
                     playersList.appendChild(listItem);
                 });
@@ -189,80 +163,10 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
     });
 }
 
-async function displayStandings(rosters, users, usersMap, rostersByUserIdMap) {
-    const standingsContainer = document.getElementById('standings-container');
-    standingsContainer.innerHTML = ''; // Clear loading text
-
-    if (!rosters || rosters.length === 0 || !users || users.length === 0) {
-        standingsContainer.innerHTML = '<p>No standings data available.</p>';
-        return;
-    }
-
-    // Prepare data for standings, including team names
-    const teamsData = rosters.map(roster => {
-        const user = usersMap.get(roster.owner_id);
-        const teamName = rostersByUserIdMap.get(roster.owner_id)?.metadata?.team_name || user?.display_name || 'Unnamed Team';
-        return {
-            teamName: teamName,
-            wins: roster.settings.wins || 0,
-            losses: roster.settings.losses || 0,
-            ties: roster.settings.ties || 0,
-            fpts: roster.settings.fpts || 0,
-            fpts_decimal: roster.settings.fpts_decimal || 0,
-            // Add other relevant standings data here if available in roster.settings
-        };
-    });
-
-    // Sort teams by wins (desc), then ties (desc), then losses (asc), then fpts (desc)
-    teamsData.sort((a, b) => {
-        if (b.wins !== a.wins) return b.wins - a.wins;
-        if (b.ties !== a.ties) return b.ties - a.ties;
-        if (a.losses !== b.losses) return a.losses - b.losses;
-        // For tie-breaking with fractional points, combine fpts and fpts_decimal
-        const aTotalFpts = a.fpts + (a.fpts_decimal / 100);
-        const bTotalFpts = b.fpts + (b.fpts_decimal / 100);
-        return bTotalFpts - aTotalFpts;
-    });
-
-    const standingsTable = document.createElement('table');
-    standingsTable.classList.add('standings-table'); // Add a class for styling
-    standingsTable.innerHTML = `
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Team Name</th>
-                <th>W</th>
-                <th>L</th>
-                <th>T</th>
-                <th>PF</th> <!-- Points For -->
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    `;
-
-    const tbody = standingsTable.querySelector('tbody');
-    teamsData.forEach((team, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${team.teamName}</td>
-            <td>${team.wins}</td>
-            <td>${team.losses}</td>
-            <td>${team.ties}</td>
-            <td>${team.fpts}.${String(team.fpts_decimal).padStart(2, '0')}</td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    standingsContainer.appendChild(standingsTable);
-}
-
 async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
     const users = await fetchUsers();
-    const allPlayers = await fetchAllPlayers();
 
     let draft = null;
     let draftPicks = [];
@@ -288,8 +192,7 @@ async function displayLeagueInfo() {
         const teamDraftedPlayers = new Map(); // Map: roster_id -> [pick objects]
         if (draftPicks.length > 0) {
             draftPicks.forEach(pick => {
-                const player = allPlayers[pick.player_id];
-                if (player) {
+                if (pick.player_id) {
                     if (!teamDraftedPlayers.has(pick.roster_id)) {
                         teamDraftedPlayers.set(pick.roster_id, []);
                     }
@@ -299,7 +202,7 @@ async function displayLeagueInfo() {
         }
 
         // Initial display: View by Team
-        displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
+        displayPlayersByTeam(rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
         draftedByRoundSection.style.display = 'none'; // Ensure it's hidden initially
         viewByTeamBtn.classList.add('active'); // Add an active class for styling (you can define this in CSS)
 
@@ -310,7 +213,7 @@ async function displayLeagueInfo() {
             viewByTeamBtn.classList.add('active');
             viewByRoundBtn.classList.remove('active');
             // Re-render by team in case data changed
-            displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
+            displayPlayersByTeam(rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
         });
 
         viewByRoundBtn.addEventListener('click', () => {
@@ -319,7 +222,7 @@ async function displayLeagueInfo() {
             viewByTeamBtn.classList.remove('active');
             viewByRoundBtn.classList.add('active');
             // Render by round
-            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters);
+            displayPlayersByRound(draftPicks, usersMap, rostersByUserIdMap, league, rosters);
         });
 
         // Display Draft Details
@@ -379,12 +282,11 @@ async function displayLeagueInfo() {
         const recentPicksList = document.getElementById('recent-picks-list');
         recentPicksList.innerHTML = ''; // Clear loading text
 
-        if (draftPicks.length > 0 && allPlayers) {
+        if (draftPicks.length > 0) {
             // Get the last 5 picks or fewer if less than 5 picks have been made
             const lastFivePicks = draftPicks.slice(-5);
 
             lastFivePicks.reverse().forEach(pick => {
-                const player = allPlayers[pick.player_id];
                 let userIdForPick = pick.metadata.owner_id; // Prioritize owner_id from metadata
 
                 if (!userIdForPick) {
@@ -396,10 +298,8 @@ async function displayLeagueInfo() {
                 }
                 const user = usersMap.get(userIdForPick);
 
-                if (player && user) {
+                if (user) {
                     const listItem = document.createElement('li');
-                    const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
-                    const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
                     const rosterForPick = rostersByUserIdMap.get(userIdForPick);
                     const teamNameForPick = rosterForPick?.metadata?.team_name || user.display_name || 'Unknown Team';
 
@@ -408,9 +308,7 @@ async function displayLeagueInfo() {
                     const roundNumber = Math.ceil(pick.pick_no / numTeams);
 
                     listItem.innerHTML = `
-                        Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
-                        ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                        by ${teamNameForPick}
+                        Round ${roundNumber}, Pick ${pick.pick_no} - Player ID: ${pick.player_id} by ${teamNameForPick}
                     `;
                     recentPicksList.appendChild(listItem);
                 }
@@ -429,9 +327,6 @@ async function displayLeagueInfo() {
         document.getElementById('draft-progress-fill').style.width = '0%';
         document.getElementById('draft-progress-text').textContent = '0% complete (0/0 picks)';
     }
-    
-    // Display Standings (moved outside the main conditional block)
-    await displayStandings(rosters, users, usersMap, rostersByUserIdMap);
 }
 
 function setupDarkModeToggle() {
