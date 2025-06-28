@@ -85,11 +85,114 @@ async function fetchDraftPicks(draftId) {
     }
 }
 
+// New function to display players by round
+async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league) {
+    const playersByRoundContainer = document.getElementById('players-by-round-container');
+    playersByRoundContainer.innerHTML = ''; // Clear previous content
+
+    if (!draftPicks || draftPicks.length === 0) {
+        playersByRoundContainer.innerHTML = '<p>No players drafted yet to display by round.</p>';
+        return;
+    }
+
+    const picksByRound = new Map(); // Map: roundNumber -> [picks]
+    const numTeams = league.settings.num_teams; // Get numTeams from league object
+
+    draftPicks.sort((a, b) => a.pick_no - b.pick_no).forEach(pick => {
+        const roundNumber = Math.ceil(pick.pick_no / numTeams);
+        if (!picksByRound.has(roundNumber)) {
+            picksByRound.set(roundNumber, []);
+        }
+        picksByRound.get(roundNumber).push(pick);
+    });
+
+    // Sort rounds numerically
+    const sortedRounds = Array.from(picksByRound.keys()).sort((a, b) => a - b);
+
+    sortedRounds.forEach(roundNumber => {
+        const roundDiv = document.createElement('div');
+        roundDiv.classList.add('draft-round');
+        roundDiv.innerHTML = `<h3>Round ${roundNumber}</h3>`;
+
+        const picksList = document.createElement('ul');
+        picksByRound.get(roundNumber).forEach(pick => {
+            const player = allPlayers[pick.player_id];
+            let userIdForPick = pick.metadata.owner_id;
+            if (!userIdForPick) {
+                const pickRoster = rosters.find(r => r.roster_id === pick.roster_id);
+                if (pickRoster) {
+                    userIdForPick = pickRoster.owner_id;
+                }
+            }
+            const user = usersMap.get(userIdForPick);
+            const rosterForPick = rostersByUserIdMap.get(userIdForPick);
+            const teamNameForPick = rosterForPick?.metadata?.team_name || (user ? user.display_name : 'Unknown Team');
+
+            if (player) {
+                const listItem = document.createElement('li');
+                const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
+                const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
+
+                listItem.innerHTML = `
+                    Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
+                    ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
+                    by ${teamNameForPick}
+                `;
+                picksList.appendChild(listItem);
+            }
+        });
+        roundDiv.appendChild(picksList);
+        playersByRoundContainer.appendChild(roundDiv);
+    });
+}
+
+// Existing logic for displaying players by team, refactored into a new function
+async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, teamsContainer) {
+    rosters.forEach(roster => {
+        const user = usersMap.get(roster.owner_id);
+        if (user) {
+            const teamName = roster.metadata?.team_name || user.display_name || 'Unnamed Team';
+            const teamCard = document.createElement('div');
+            teamCard.classList.add('team-card');
+            teamCard.innerHTML = `<h3>${teamName}</h3>`;
+
+            const draftedPicks = teamDraftedPlayers.get(roster.roster_id);
+            if (draftedPicks && draftedPicks.length > 0) {
+                const playersList = document.createElement('ul');
+                draftedPicks.sort((a, b) => a.pick_no - b.pick_no).forEach(pick => {
+                    const player = allPlayers[pick.player_id];
+                    if (!player) return;
+
+                    const listItem = document.createElement('li');
+                    const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
+                    const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
+
+                    const numTeams = users.length; // Use users.length for numTeams, as league might not be available here directly
+                    const roundNumber = Math.ceil(pick.pick_no / numTeams);
+
+                    listItem.innerHTML = `
+                        Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
+                        ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
+                    `;
+                    playersList.appendChild(listItem);
+                });
+                teamCard.appendChild(playersList);
+            } else {
+                const p = document.createElement('p');
+                p.textContent = 'No players drafted yet.';
+                teamCard.appendChild(p);
+            }
+
+            teamsContainer.appendChild(teamCard);
+        }
+    });
+}
+
 async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
     const users = await fetchUsers();
-    const allPlayers = await fetchAllPlayers(); // Fetch all players here
+    const allPlayers = await fetchAllPlayers();
 
     let draft = null;
     let draftPicks = [];
@@ -99,8 +202,11 @@ async function displayLeagueInfo() {
     }
 
     if (league && rosters.length > 0 && users.length > 0) {
-        const teamsContainer = document.getElementById('teams-container');
-        teamsContainer.innerHTML = ''; // Clear loading text
+        // Get references to sections and buttons
+        const draftedByTeamSection = document.getElementById('drafted-by-team-section');
+        const draftedByRoundSection = document.getElementById('drafted-by-round-section');
+        const viewByTeamBtn = document.getElementById('view-by-team-btn');
+        const viewByRoundBtn = document.getElementById('view-by-round-btn');
 
         // Create a map to easily look up users by user_id
         const usersMap = new Map(users.map(user => [user.user_id, user]));
@@ -109,7 +215,7 @@ async function displayLeagueInfo() {
         const rostersByUserIdMap = new Map(rosters.map(roster => [roster.owner_id, roster]));
 
         // Process draft picks to get drafted players for each team
-        const teamDraftedPlayers = new Map(); // Map: roster_id -> [player objects]
+        const teamDraftedPlayers = new Map(); // Map: roster_id -> [pick objects]
         if (draftPicks.length > 0) {
             draftPicks.forEach(pick => {
                 const player = allPlayers[pick.player_id];
@@ -122,46 +228,28 @@ async function displayLeagueInfo() {
             });
         }
 
-        rosters.forEach(roster => {
-            const user = usersMap.get(roster.owner_id);
-            if (user) {
-                const teamName = roster.metadata?.team_name || user.display_name || 'Unnamed Team';
-                const teamCard = document.createElement('div');
-                teamCard.classList.add('team-card');
-                teamCard.innerHTML = `<h3>${teamName}</h3>`;
+        // Initial display: View by Team
+        displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
+        draftedByRoundSection.style.display = 'none'; // Ensure it's hidden initially
+        viewByTeamBtn.classList.add('active'); // Add an active class for styling (you can define this in CSS)
 
-                // Display drafted players for this team from draft.picks
-                const draftedPicks = teamDraftedPlayers.get(roster.roster_id); // Now it's draftedPicks
-                if (draftedPicks && draftedPicks.length > 0) {
-                    const playersList = document.createElement('ul');
-                    // Sort picks by pick_no for consistent display within a team
-                    draftedPicks.sort((a, b) => a.pick_no - b.pick_no).forEach(pick => {
-                        const player = allPlayers[pick.player_id]; // Get player details from allPlayers
-                        if (!player) return; // Skip if player data is somehow missing
+        // Event Listeners for buttons
+        viewByTeamBtn.addEventListener('click', () => {
+            draftedByTeamSection.style.display = 'block';
+            draftedByRoundSection.style.display = 'none';
+            viewByTeamBtn.classList.add('active');
+            viewByRoundBtn.classList.remove('active');
+            // Re-render by team in case data changed
+            displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
+        });
 
-                        const listItem = document.createElement('li');
-                        const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
-                        const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
-
-                        // Calculate round number
-                        const numTeams = league.settings.num_teams; // Assuming league object is accessible here
-                        const roundNumber = Math.ceil(pick.pick_no / numTeams);
-
-                        listItem.innerHTML = `
-                            Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
-                            ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                        `;
-                        playersList.appendChild(listItem);
-                    });
-                    teamCard.appendChild(playersList);
-                } else {
-                    const p = document.createElement('p');
-                    p.textContent = 'No players drafted yet.';
-                    teamCard.appendChild(p);
-                }
-
-                teamsContainer.appendChild(teamCard);
-            }
+        viewByRoundBtn.addEventListener('click', () => {
+            draftedByTeamSection.style.display = 'none';
+            draftedByRoundSection.style.display = 'block';
+            viewByTeamBtn.classList.remove('active');
+            viewByRoundBtn.classList.add('active');
+            // Render by round
+            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league);
         });
 
         // Display Draft Details
