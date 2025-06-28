@@ -169,14 +169,18 @@ h2 {
 }
 
 .team-card li a,
-.draft-round li a {
+.draft-round li a,
+#recent-picks-list li a,
+#draft-order-list li a {
     color: var(--heading-color);
     text-decoration: none;
     font-weight: bold;
 }
 
 .team-card li a:hover,
-.draft-round li a:hover {
+.draft-round li a:hover,
+#recent-picks-list li a:hover,
+#draft-order-list li a:hover {
     text-decoration: underline;
 }
 
