@@ -189,75 +189,6 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
     });
 }
 
-async function displayStandings(rosters, users, usersMap, rostersByUserIdMap) {
-    const standingsContainer = document.getElementById('standings-container');
-    standingsContainer.innerHTML = ''; // Clear loading text
-
-    if (!rosters || rosters.length === 0 || !users || users.length === 0) {
-        standingsContainer.innerHTML = '<p>No standings data available.</p>';
-        return;
-    }
-
-    // Prepare data for standings, including team names
-    const teamsData = rosters.map(roster => {
-        const user = usersMap.get(roster.owner_id);
-        const teamName = rostersByUserIdMap.get(roster.owner_id)?.metadata?.team_name || user?.display_name || 'Unnamed Team';
-        return {
-            teamName: teamName,
-            wins: roster.settings.wins || 0,
-            losses: roster.settings.losses || 0,
-            ties: roster.settings.ties || 0,
-            fpts: roster.settings.fpts || 0,
-            fpts_decimal: roster.settings.fpts_decimal || 0,
-            // Add other relevant standings data here if available in roster.settings
-        };
-    });
-
-    // Sort teams by wins (desc), then ties (desc), then losses (asc), then fpts (desc)
-    teamsData.sort((a, b) => {
-        if (b.wins !== a.wins) return b.wins - a.wins;
-        if (b.ties !== a.ties) return b.ties - a.ties;
-        if (a.losses !== b.losses) return a.losses - b.losses;
-        // For tie-breaking with fractional points, combine fpts and fpts_decimal
-        const aTotalFpts = a.fpts + (a.fpts_decimal / 100);
-        const bTotalFpts = b.fpts + (b.fpts_decimal / 100);
-        return bTotalFpts - aTotalFpts;
-    });
-
-    const standingsTable = document.createElement('table');
-    standingsTable.classList.add('standings-table'); // Add a class for styling
-    standingsTable.innerHTML = `
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Team Name</th>
-                <th>W</th>
-                <th>L</th>
-                <th>T</th>
-                <th>PF</th> <!-- Points For -->
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    `;
-
-    const tbody = standingsTable.querySelector('tbody');
-    teamsData.forEach((team, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${team.teamName}</td>
-            <td>${team.wins}</td>
-            <td>${team.losses}</td>
-            <td>${team.ties}</td>
-            <td>${team.fpts}.${String(team.fpts_decimal).padStart(2, '0')}</td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    standingsContainer.appendChild(standingsTable);
-}
-
 async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
@@ -429,9 +360,6 @@ async function displayLeagueInfo() {
         document.getElementById('draft-progress-fill').style.width = '0%';
         document.getElementById('draft-progress-text').textContent = '0% complete (0/0 picks)';
     }
-    
-    // Display Standings (moved outside the main conditional block)
-    await displayStandings(rosters, users, usersMap, rostersByUserIdMap);
 }
 
 function setupDarkModeToggle() {
