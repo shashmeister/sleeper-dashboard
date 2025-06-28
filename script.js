@@ -5,12 +5,12 @@ const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
 async function fetchAllPlayers() {
     try {
-        // Fetch all NFL players. This dataset is large but necessary to map player IDs to names.
-        const response = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
+        // Fetch all NFL players from your cached API endpoint.
+        const response = await fetch('/api/players'); // Updated endpoint
         const players = await response.json();
         return players;
     } catch (error) {
-        console.error('Error fetching all players:', error);
+        console.error('Error fetching all players from cached API:', error);
         return {};
     }
 }
@@ -249,7 +249,7 @@ async function displayLeagueInfo() {
             draftedByRoundSection.style.display = 'block';
             viewByTeamBtn.classList.remove('active');
             viewByRoundBtn.classList.add('active');
-            // Render by round
+            // Re-render by round in case data changed
             displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters);
         });
 
@@ -271,94 +271,11 @@ async function displayLeagueInfo() {
                     const teamNameForDraftOrder = rosterForDraftOrder?.metadata?.team_name || user.display_name || 'Unknown Team';
                     const pickNumber = draft.draft_order[userId];
                     const listItem = document.createElement('li');
-                    listItem.textContent = `Pick ${pickNumber}: ${teamNameForDraftOrder}`;
-                    draftOrderList.appendChild(listItem);
-                });
-            } else {
-                draftOrderList.innerHTML = '<li>Draft order not yet available or configured.</li>';
-            }
+                    listItem.textContent = `
+```
         } else {
-            draftStatusSpan.textContent = 'N/A';
-            draftTypeSpan.textContent = 'N/A';
-            draftOrderList.innerHTML = '<li>Draft details could not be loaded.</li>';
+            document.getElementById('teams-container').innerHTML = '<p>Could not load league data. Please check the league ID or try again later.</p>';
         }
-
-        // Display Draft Progress Bar
-        const draftProgressFill = document.getElementById('draft-progress-fill');
-        const draftProgressText = document.getElementById('draft-progress-text');
-
-        if (draft && draftPicks && league) {
-            const totalRounds = draft.settings.rounds || 0;
-            const numTeams = league.settings.num_teams; // Declare once here
-            const totalPicks = totalRounds * numTeams;
-            const completedPicks = draftPicks.length;
-
-            if (totalPicks > 0) {
-                const progressPercentage = (completedPicks / totalPicks) * 100;
-                draftProgressFill.style.width = `${progressPercentage.toFixed(2)}%`;
-                draftProgressText.textContent = `${progressPercentage.toFixed(0)}% complete (${completedPicks}/${totalPicks} picks)`;
-            } else {
-                draftProgressFill.style.width = '0%';
-                draftProgressText.textContent = '0% complete (0/0 picks)';
-            }
-        } else {
-            draftProgressFill.style.width = '0%';
-            draftProgressText.textContent = '0% complete (0/0 picks)';
-        }
-
-        // Display Recent Picks
-        const recentPicksList = document.getElementById('recent-picks-list');
-        recentPicksList.innerHTML = ''; // Clear loading text
-
-        if (draftPicks.length > 0 && allPlayers) {
-            // Get the last 5 picks or fewer if less than 5 picks have been made
-            const lastFivePicks = draftPicks.slice(-5);
-
-            lastFivePicks.reverse().forEach(pick => {
-                const player = allPlayers[pick.player_id];
-                let userIdForPick = pick.metadata.owner_id; // Prioritize owner_id from metadata
-
-                if (!userIdForPick) {
-                    // If owner_id is not in metadata, find it from the roster
-                    const pickRoster = rosters.find(r => r.roster_id === pick.roster_id);
-                    if (pickRoster) {
-                        userIdForPick = pickRoster.owner_id;
-                    }
-                }
-                const user = usersMap.get(userIdForPick);
-
-                if (player && user) {
-                    const listItem = document.createElement('li');
-                    const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
-                    const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
-                    const rosterForPick = rostersByUserIdMap.get(userIdForPick);
-                    const teamNameForPick = rosterForPick?.metadata?.team_name || user.display_name || 'Unknown Team';
-
-                    // Calculate round number
-                    const numTeams = league.settings.num_teams; // Assuming league object is accessible here
-                    const roundNumber = Math.ceil(pick.pick_no / numTeams);
-
-                    listItem.innerHTML = `
-                        Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
-                        ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                        by ${teamNameForPick}
-                    `;
-                    recentPicksList.appendChild(listItem);
-                }
-            });
-        } else {
-            recentPicksList.innerHTML = '<p>No recent picks available.</p>';
-        }
-
-    } else {
-        document.getElementById('teams-container').innerHTML = '<p>Could not load league data. Please check the league ID or try again later.</p>';
-        document.getElementById('draft-status').textContent = 'Failed to load';
-        document.getElementById('draft-type').textContent = 'Failed to load';
-        document.getElementById('draft-order-list').innerHTML = '<li>Failed to load draft order.</li>';
-        document.getElementById('recent-picks-list').innerHTML = '<p>Failed to load recent picks.</p>';
-        // Update progress bar on failure as well
-        document.getElementById('draft-progress-fill').style.width = '0%';
-        document.getElementById('draft-progress-text').textContent = '0% complete (0/0 picks)';
     }
 }
 
