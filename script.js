@@ -289,8 +289,21 @@ async function displayLeagueInfo() {
         const pickTimerP = document.getElementById('pick-timer'); // Placeholder for timer
 
         if (draft && draftPicks && usersMap.size > 0 && rosters.length > 0) {
-            const currentPickNumber = draftPicks.length + 1; // The next pick number
-            const numTeams = league.settings.num_teams; // Number of teams in the league
+            const totalRounds = draft.settings.rounds || 0;
+            const numTeams = league.settings.num_teams; // Declare once here
+            const totalPicks = totalRounds * numTeams;
+            const completedPicks = draftPicks.length;
+
+            if (completedPicks >= totalPicks) {
+                onTheClockSpan.textContent = 'Draft Completed!';
+                pickNumberSpan.textContent = `Pick: ${totalPicks}/${totalPicks}`;
+                pickTimerP.textContent = '';
+                document.getElementById('draft-progress-fill').style.width = '100%';
+                document.getElementById('draft-progress-text').textContent = `100% complete (${totalPicks}/${totalPicks} picks)`;
+                return; // Exit the function if draft is completed
+            }
+
+            const currentPickNumber = completedPicks + 1; // The next pick number
 
             pickNumberSpan.textContent = `Pick: ${currentPickNumber}`;
 
