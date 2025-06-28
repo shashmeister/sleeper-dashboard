@@ -55,11 +55,24 @@
             </ul>
         </section>
 
-        <section id="teams-section">
-            <h2>Teams</h2>
+        <div class="draft-display-controls">
+            <button id="view-by-team-btn">View by Team</button>
+            <button id="view-by-round-btn">View by Round</button>
+        </div>
+
+        <section id="drafted-by-team-section">
+            <h2>Drafted Players (By Team)</h2>
             <div id="teams-container">
                 <!-- Teams will be loaded here by JavaScript -->
                 <p>Loading teams...</p>
+            </div>
+        </section>
+
+        <section id="drafted-by-round-section" style="display:none;">
+            <h2>Drafted Players (By Round)</h2>
+            <div id="players-by-round-container">
+                <!-- Players by round will be loaded here by JavaScript -->
+                <p>Loading players by round...</p>
             </div>
         </section>
 
@@ -83,3 +96,5 @@
     <script src="script.js"></script>
 </body>
 </html>
+
+<!-- Dummy change to force Vercel redeployment -->
