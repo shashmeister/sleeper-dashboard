@@ -86,7 +86,7 @@ async function fetchDraftPicks(draftId) {
 }
 
 // New function to display players by round
-async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league) {
+async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters) {
     const playersByRoundContainer = document.getElementById('players-by-round-container');
     playersByRoundContainer.innerHTML = ''; // Clear previous content
 
@@ -249,7 +249,7 @@ async function displayLeagueInfo() {
             viewByTeamBtn.classList.remove('active');
             viewByRoundBtn.classList.add('active');
             // Render by round
-            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league);
+            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters);
         });
 
         // Display Draft Details
