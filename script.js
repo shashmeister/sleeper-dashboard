@@ -148,6 +148,7 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
 
 // Existing logic for displaying players by team, refactored into a new function
 async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, teamsContainer) {
+    teamsContainer.innerHTML = ''; // Clear previous content, including the "Loading teams..." message
     rosters.forEach(roster => {
         const user = usersMap.get(roster.owner_id);
         if (user) {
