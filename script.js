@@ -253,29 +253,17 @@ async function displayLeagueInfo() {
             displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters);
         });
 
-        // Display Draft Details
-        const draftStatusSpan = document.getElementById('draft-status');
-        const draftTypeSpan = document.getElementById('draft-type');
-        const draftOrderList = document.getElementById('draft-order-list');
-
-        if (draft) {
-            draftStatusSpan.textContent = draft.status;
-            draftTypeSpan.textContent = draft.type;
-            draftOrderList.innerHTML = ''; // Clear loading text
-
-            if (draft.draft_order) {
-                // Map draft_order (user_id -> pick_number) to display_name or team_name
-                Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - draft.draft_order[b]).forEach(userId => {
-                    const user = usersMap.get(userId); // Use usersMap here
-                    const rosterForDraftOrder = rostersByUserIdMap.get(userId);
-                    const teamNameForDraftOrder = rosterForDraftOrder?.metadata?.team_name || user.display_name || 'Unknown Team';
-                    const pickNumber = draft.draft_order[userId];
-                    const listItem = document.createElement('li');
-                    listItem.textContent = `
-```
-        } else {
-            document.getElementById('teams-container').innerHTML = '<p>Could not load league data. Please check the league ID or try again later.</p>';
-        }
+    } else {
+        document.getElementById('teams-container').innerHTML = '<p>Could not load league data. Please check the league ID or try again later.</p>';
+        // These elements might not exist if the HTML was also truncated or not updated.
+        // I'm including them based on previous functionality, but be aware they might need HTML updates too.
+        // document.getElementById('draft-status').textContent = 'Failed to load'; // Removed in previous turn
+        // document.getElementById('draft-type').textContent = 'Failed to load'; // Removed in previous turn
+        // document.getElementById('draft-order-list').innerHTML = '<li>Failed to load draft order.</li>'; // Removed in previous turn
+        // document.getElementById('recent-picks-list').innerHTML = '<p>Failed to load recent picks.</p>'; // Removed in previous turn
+        // Update progress bar on failure as well
+        // document.getElementById('draft-progress-fill').style.width = '0%'; // Removed in previous turn
+        // document.getElementById('draft-progress-text').textContent = '0% complete (0/0 picks)'; // Removed in previous turn
     }
 }
 
