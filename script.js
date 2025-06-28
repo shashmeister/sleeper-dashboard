@@ -362,5 +362,31 @@ async function displayLeagueInfo() {
     }
 }
 
+function setupDarkModeToggle() {
+    const toggleButton = document.getElementById('dark-mode-toggle');
+    const body = document.body;
+
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        body.classList.add(savedTheme);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // Default to dark mode if user's system prefers it and no preference is saved
+        body.classList.add('dark-mode');
+    }
+
+    toggleButton.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        if (body.classList.contains('dark-mode')) {
+            localStorage.setItem('theme', 'dark-mode');
+        } else {
+            localStorage.setItem('theme', ''); // Clear the item or set to 'light-mode' if you have a specific light class
+        }
+    });
+}
+
 // Run the function when the page loads
-document.addEventListener('DOMContentLoaded', displayLeagueInfo);
+document.addEventListener('DOMContentLoaded', () => {
+    displayLeagueInfo();
+    setupDarkModeToggle(); // Call the dark mode setup function
+});

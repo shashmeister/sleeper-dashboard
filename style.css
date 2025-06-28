@@ -1,18 +1,62 @@
 @charset "UTF-8";
 /* CSS Document */
 
+:root {
+    --bg-primary: #eef2f6;
+    --bg-secondary: #ffffff;
+    --text-primary: #334155;
+    --text-secondary: #555;
+    --header-bg: #2c3e50;
+    --header-text: #ffffff;
+    --header-p: #bdc3c7;
+    --section-bg: #fcfcfc;
+    --section-border: #e0e7eb;
+    --heading-color: #007bff;
+    --button-bg: #007bff;
+    --button-hover-bg: #0056b3;
+    --button-active-bg: #28a745;
+    --card-bg: #f8f8f8;
+    --card-heading: #2c3e50;
+    --card-border: #e0e7eb;
+    --progress-bar-bg: #e0e7eb;
+    --progress-bar-fill: #28a745;
+    --list-border: #eee;
+}
+
+body.dark-mode {
+    --bg-primary: #1a202c;
+    --bg-secondary: #2d3748;
+    --text-primary: #e2e8f0;
+    --text-secondary: #cbd5e0;
+    --header-bg: #1a202c;
+    --header-text: #e2e8f0;
+    --header-p: #a0aec0;
+    --section-bg: #2d3748;
+    --section-border: #4a5568;
+    --heading-color: #63b3ed;
+    --button-bg: #63b3ed;
+    --button-hover-bg: #4299e1;
+    --button-active-bg: #48bb78;
+    --card-bg: #4a5568;
+    --card-heading: #e2e8f0;
+    --card-border: #636b6f;
+    --progress-bar-bg: #4a5568;
+    --progress-bar-fill: #48bb78;
+    --list-border: #636b6f;
+}
+
 body {
     font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; /* Modern sans-serif font stack */
     margin: 0;
     padding: 0;
-    background-color: #eef2f6; /* Light gray-blue background */
-    color: #334155; /* Darker gray for primary text */
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     line-height: 1.6;
 }
 
 header {
-    background-color: #2c3e50; /* Dark blue-gray */
-    color: #ffffff;
+    background-color: var(--header-bg);
+    color: var(--header-text);
     padding: 1.5rem 0;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -26,14 +70,14 @@ header h1 {
 
 header p {
     font-size: 1.1em;
-    color: #bdc3c7;
+    color: var(--header-p);
 }
 
 main {
     padding: 30px;
     max-width: 1000px;
     margin: 30px auto;
-    background-color: #ffffff;
+    background-color: var(--bg-secondary);
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
@@ -41,17 +85,17 @@ main {
 section {
     margin-bottom: 25px;
     padding: 25px;
-    border: 1px solid #e0e7eb; /* Lighter border */
+    border: 1px solid var(--section-border);
     border-radius: 8px;
-    background-color: #fcfcfc;
+    background-color: var(--section-bg);
 }
 
 h2 {
-    color: #007bff; /* Primary blue for headings */
+    color: var(--heading-color);
     margin-top: 0;
     margin-bottom: 15px;
     font-size: 1.8em;
-    border-bottom: 2px solid #e0e7eb;
+    border-bottom: 2px solid var(--section-border);
     padding-bottom: 10px;
 }
 
@@ -62,7 +106,7 @@ h2 {
 }
 
 .draft-display-controls button {
-    background-color: #007bff; /* Primary blue */
+    background-color: var(--button-bg);
     color: white;
     border: none;
     padding: 12px 25px;
@@ -74,12 +118,12 @@ h2 {
 }
 
 .draft-display-controls button:hover {
-    background-color: #0056b3; /* Darker blue on hover */
+    background-color: var(--button-hover-bg);
     transform: translateY(-2px);
 }
 
 .draft-display-controls button.active {
-    background-color: #28a745; /* Green for active state */
+    background-color: var(--button-active-bg);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -92,20 +136,20 @@ h2 {
 
 .team-card,
 .draft-round {
-    background-color: #f8f8f8;
+    background-color: var(--card-bg);
     padding: 20px;
     border-radius: 10px;
     text-align: left;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e0e7eb;
+    border: 1px solid var(--card-border);
 }
 
 .team-card h3,
 .draft-round h3 {
     margin-top: 0;
-    color: #2c3e50; /* Darker heading for cards */
+    color: var(--card-heading);
     font-size: 1.4em;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--list-border);
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
@@ -121,12 +165,12 @@ h2 {
 .draft-round li {
     margin-bottom: 8px;
     font-size: 0.95em;
-    color: #555;
+    color: var(--text-secondary);
 }
 
 .team-card li a,
 .draft-round li a {
-    color: #007bff;
+    color: var(--heading-color);
     text-decoration: none;
     font-weight: bold;
 }
@@ -138,7 +182,7 @@ h2 {
 
 .progress-bar-container {
     width: 100%;
-    background-color: #e0e7eb;
+    background-color: var(--progress-bar-bg);
     border-radius: 5px;
     overflow: hidden;
     margin-top: 15px;
@@ -147,7 +191,7 @@ h2 {
 
 .progress-bar-fill {
     height: 100%;
-    background-color: #28a745; /* Green */
+    background-color: var(--progress-bar-fill);
     width: 0%; /* Will be set by JavaScript */
     border-radius: 5px;
     transition: width 0.6s ease-in-out;
@@ -157,7 +201,7 @@ h2 {
     text-align: center;
     margin-top: 10px;
     font-weight: bold;
-    color: #555;
+    color: var(--text-secondary);
     font-size: 1.1em;
 }
 
@@ -174,7 +218,7 @@ h2 {
 /* Styling for recent picks */
 #recent-picks-list li {
     padding: 8px 0;
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed var(--list-border);
     font-size: 0.95em;
 }
 
