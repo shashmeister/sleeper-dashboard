@@ -283,76 +283,6 @@ async function displayLeagueInfo() {
             draftOrderList.innerHTML = '<li>Draft details could not be loaded.</li>';
         }
 
-        // Display Current Pick
-        const onTheClockSpan = document.getElementById('on-the-clock');
-        const pickNumberSpan = document.getElementById('pick-number');
-        const pickTimerP = document.getElementById('pick-timer'); // Placeholder for timer
-
-        if (draft && draftPicks && usersMap.size > 0 && rosters.length > 0) {
-            const totalRounds = draft.settings.rounds || 0;
-            const numTeams = league.settings.num_teams; // Declare once here
-            const totalPicks = totalRounds * numTeams;
-            const completedPicks = draftPicks.length;
-
-            if (completedPicks >= totalPicks) {
-                onTheClockSpan.textContent = 'Draft Completed!';
-                pickNumberSpan.textContent = `Pick: ${totalPicks}/${totalPicks}`;
-                pickTimerP.textContent = '';
-                document.getElementById('draft-progress-fill').style.width = '100%';
-                document.getElementById('draft-progress-text').textContent = `100% complete (${totalPicks}/${totalPicks} picks)`;
-                return; // Exit the function if draft is completed
-            }
-
-            const currentPickNumber = completedPicks + 1; // The next pick number
-
-            pickNumberSpan.textContent = `Pick: ${currentPickNumber}`;
-
-            let currentPickSlot;
-            const currentRound = Math.ceil(currentPickNumber / numTeams);
-            const pickInRound = currentPickNumber % numTeams === 0 ? numTeams : currentPickNumber % numTeams;
-
-            if (draft.type === 'snake' && currentRound % 2 === 0) {
-                // Even rounds for snake draft, pick order reverses
-                currentPickSlot = numTeams - pickInRound + 1;
-            } else {
-                // Odd rounds for snake draft, or linear draft
-                currentPickSlot = pickInRound;
-            }
-            
-            // Find the roster_id from slot_to_roster_id map
-            const currentRosterId = draft.slot_to_roster_id[currentPickSlot];
-            
-            // Find the user_id from the rosters array based on roster_id
-            const currentRoster = rosters.find(r => r.roster_id === parseInt(currentRosterId));
-
-            let currentPicker = null;
-            let currentPickerTeamName = 'Unknown Manager';
-            if (currentRoster) {
-                currentPicker = usersMap.get(currentRoster.owner_id);
-                currentPickerTeamName = currentRoster.metadata?.team_name || currentPicker.display_name || 'Unknown Manager';
-            }
-
-            if (currentPicker) {
-                onTheClockSpan.textContent = `${currentPickerTeamName} is on the clock!`;
-            } else {
-                onTheClockSpan.textContent = 'Unknown manager on the clock.';
-            }
-
-            // For the timer, Sleeper API has draft_metadata.pick_start_time and draft_metadata.pick_timer
-            if (draft.settings.enforce_module_timer) {
-                // If you want to implement a live timer later, this is where you'd do it.
-                // For now, we'll leave this empty.
-                // pickTimerP.textContent = 'Pick timer is active.'; 
-            } else {
-                pickTimerP.textContent = ''; // Clear the message if no timer enforced
-            }
-
-        } else {
-            onTheClockSpan.textContent = 'Draft not in progress or details unavailable.';
-            pickNumberSpan.textContent = 'Pick: N/A';
-            pickTimerP.textContent = '';
-        }
-
         // Display Draft Progress Bar
         const draftProgressFill = document.getElementById('draft-progress-fill');
         const draftProgressText = document.getElementById('draft-progress-text');
@@ -426,9 +356,6 @@ async function displayLeagueInfo() {
         document.getElementById('draft-type').textContent = 'Failed to load';
         document.getElementById('draft-order-list').innerHTML = '<li>Failed to load draft order.</li>';
         document.getElementById('recent-picks-list').innerHTML = '<p>Failed to load recent picks.</p>';
-        document.getElementById('on-the-clock').textContent = 'Failed to load';
-        document.getElementById('pick-number').textContent = 'Pick: Failed to load';
-        document.getElementById('pick-timer').textContent = '';
         // Update progress bar on failure as well
         document.getElementById('draft-progress-fill').style.width = '0%';
         document.getElementById('draft-progress-text').textContent = '0% complete (0/0 picks)';
