@@ -5,12 +5,12 @@
 
     async function fetchAllPlayers() {
         try {
-            // Fetch all NFL players from your cached API endpoint.
-            const response = await fetch('/api/players'); // Updated endpoint
+            // Fetch all NFL players. This dataset is large but necessary to map player IDs to names.
+            const response = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
             const players = await response.json();
             return players;
         } catch (error) {
-            console.error('Error fetching all players from cached API:', error);
+            console.error('Error fetching all players:', error);
             return {};
         }
     }
