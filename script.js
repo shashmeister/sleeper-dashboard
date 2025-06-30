@@ -277,7 +277,7 @@ async function displayLeagueInfo() {
 
             if (draft.draft_order) {
                 // Map draft_order (user_id -> pick_number) to display_name or team_name
-                Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - b.draft_order[b]).forEach(userId => {
+                Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - draft.draft_order[b]).forEach(userId => {
                     const user = usersMap.get(userId); // Use usersMap here
                     const rosterForDraftOrder = rostersByUserIdMap.get(userId);
                     const teamNameForDraftOrder = rosterForDraftOrder?.metadata?.team_name || user.display_name || 'Unknown Team';
