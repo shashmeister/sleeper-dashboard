@@ -4,21 +4,65 @@ const LEAGUE_ID = '1229429982934077440'; // Your league ID
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 const SLEEPER_AVATAR_BASE = 'https://sleepercdn.com/avatars/thumbs';
 
+// --- IndexedDB Caching Utilities ---
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('sleeper-dashboard-db', 1);
+        request.onupgradeneeded = event => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('cacheStore')) {
+                db.createObjectStore('cacheStore', { keyPath: 'key' });
+            }
+        };
+        request.onsuccess = event => resolve(event.target.result);
+        request.onerror = event => reject(event.target.error);
+    });
+}
+
+function getFromDB(db, key) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['cacheStore'], 'readonly');
+        const store = transaction.objectStore('cacheStore');
+        const request = store.get(key);
+        request.onsuccess = () => resolve(request.result ? request.result.value : undefined);
+        request.onerror = event => reject(event.target.error);
+    });
+}
+
+function setInDB(db, key, value) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['cacheStore'], 'readwrite');
+        const store = transaction.objectStore('cacheStore');
+        const request = store.put({ key, value });
+        request.onsuccess = () => resolve();
+        request.onerror = event => reject(event.target.error);
+    });
+}
+
+// --- End IndexedDB Caching Utilities ---
+
 async function fetchAllPlayers() {
-    console.log('fetchAllPlayers function started.');
     const CACHE_KEY = 'allPlayersData';
     const TIMESTAMP_KEY = 'allPlayersTimestamp';
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-    const cachedTimestamp = localStorage.getItem(TIMESTAMP_KEY);
-    const cachedData = localStorage.getItem(CACHE_KEY);
-    const now = Date.now();
+    try {
+        const db = await openDB();
+        const cachedTimestamp = await getFromDB(db, TIMESTAMP_KEY);
+        const now = Date.now();
 
-    console.log(`Cache check: Data exists? ${!!cachedData}, Timestamp exists? ${!!cachedTimestamp}`);
-
-    if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp) < CACHE_DURATION)) {
-        console.log('Serving players data from localStorage cache.');
-        return JSON.parse(cachedData);
+        if (cachedTimestamp && (now - cachedTimestamp < CACHE_DURATION)) {
+            console.log('Serving players data from IndexedDB cache.');
+            const cachedData = await getFromDB(db, CACHE_KEY);
+            if (cachedData) {
+                return cachedData;
+            }
+            console.log('Cache timestamp valid, but data was empty. Fetching new data.');
+        }
+    } catch (dbError) {
+        console.error('IndexedDB cache read failed. Will fetch from network.', dbError);
+        logError('Cache Error', 'Failed to read from IndexedDB', { originalError: dbError.message });
     }
 
     try {
@@ -29,19 +73,21 @@ async function fetchAllPlayers() {
         }
         const players = await response.json();
 
-        localStorage.setItem(CACHE_KEY, JSON.stringify(players));
-        localStorage.setItem(TIMESTAMP_KEY, now.toString());
-        console.log('Players data fetched and cached in localStorage.');
-
-        return players;
-    } catch (error) {
-        logError('Client-side Fetch Error', 'Error fetching all players from Sleeper API', { originalError: error.message });
-        // If the API fails, still try to return the old cached data if it exists
-        if (cachedData) {
-            console.warn('API fetch failed. Serving stale data from cache.');
-            return JSON.parse(cachedData);
+        try {
+            const db = await openDB();
+            await setInDB(db, CACHE_KEY, players);
+            await setInDB(db, TIMESTAMP_KEY, Date.now());
+            console.log('Players data fetched and cached in IndexedDB.');
+        } catch (dbError) {
+            console.error('IndexedDB cache write failed.', dbError);
+            logError('Cache Error', 'Failed to write to IndexedDB', { originalError: dbError.message });
         }
-        return {}; // Return empty object if there's no cache and the fetch fails
+        
+        return players;
+    } catch (fetchError) {
+        logError('Client-side Fetch Error', 'Error fetching all players from Sleeper API', { originalError: fetchError.message });
+        console.warn('API fetch failed. No fresh data available.');
+        return {}; 
     }
 }
 
