@@ -88,39 +88,6 @@ async function fetchDraftPicks(draftId) {
     }
 }
 
-async function fetchNflState() {
-    try {
-        const response = await fetch(`${SLEEPER_API_BASE}/state/nfl`);
-        if (!response.ok) {
-            throw new Error(`Sleeper API responded with status: ${response.status}`);
-        }
-        const nflState = await response.json();
-        return nflState;
-    } catch (error) {
-        logError('API Error', 'Error fetching NFL state', { originalError: error.message });
-        return null;
-    }
-}
-
-async function fetchTransactions(leagueId, week) {
-    if (!leagueId || !week) {
-        console.warn('League ID or Week not provided. Cannot fetch transactions.');
-        return [];
-    }
-    try {
-        const response = await fetch(`${SLEEPER_API_BASE}/league/${leagueId}/transactions/${week}`);
-        if (!response.ok) {
-            throw new Error(`Sleeper API responded with status: ${response.status}`);
-        }
-        const transactions = await response.json();
-        return transactions;
-    } catch (error) {
-        logError('API Error', `Error fetching transactions for week ${week}`, { originalError: error.message });
-        return [];
-    }
-}
-
-// New function to display players by round
 async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters) {
     const playersByRoundContainer = document.getElementById('players-by-round-container');
     playersByRoundContainer.innerHTML = ''; // Clear previous content
@@ -224,108 +191,11 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
     });
 }
 
-async function displayTransactions(transactions, allPlayers, usersMap, rostersByUserIdMap) {
-    const transactionsList = document.getElementById('transactions-list');
-    transactionsList.innerHTML = ''; // Clear loading text
-
-    if (!transactions || transactions.length === 0) {
-        transactionsList.innerHTML = '<li>No recent trades or transactions found.</li>';
-        return;
-    }
-
-    // Sort transactions by status_update timestamp or transaction_id (descending)
-    transactions.sort((a, b) => {
-        const timeA = a.status_update || a.last_updated;
-        const timeB = b.status_update || b.last_updated;
-        return timeB - timeA; // Newest first
-    });
-
-    const MAX_TRANSACTIONS_TO_DISPLAY = 10; // Limit to 10 most recent transactions
-    const displayCount = 0; // Initialize counter for displayed items
-
-    for (const transaction of transactions) {
-        if (displayCount >= MAX_TRANSACTIONS_TO_DISPLAY) break;
-
-        const listItem = document.createElement('li');
-        let transactionText = '';
-        const createdAt = new Date(transaction.status_update || transaction.last_updated).toLocaleString();
-
-        const getTeamName = (userId) => {
-            const user = usersMap.get(userId);
-            const roster = rostersByUserIdMap.get(userId);
-            return roster?.metadata?.team_name || user?.display_name || 'Unknown Team';
-        };
-
-        // Handle Trades
-        if (transaction.type === 'trade' && transaction.draft_id === null) {
-            const tradeParties = new Set();
-            transaction.roster_ids.forEach(rosterId => {
-                const user = Array.from(usersMap.values()).find(u => rostersByUserIdMap.get(u.user_id)?.roster_id === rosterId);
-                if (user) tradeParties.add(getTeamName(user.user_id));
-            });
-
-            let givesGets = [];
-            for (const rosterId of transaction.roster_ids) {
-                const user = Array.from(usersMap.values()).find(u => rostersByUserIdMap.get(u.user_id)?.roster_id === rosterId);
-                const teamName = getTeamName(user.user_id);
-                const playerAdds = transaction.adds ? Object.keys(transaction.adds).filter(playerId => transaction.adds[playerId] === rosterId) : [];
-                const playerDrops = transaction.drops ? Object.keys(transaction.drops).filter(playerId => transaction.drops[playerId] === rosterId) : [];
-
-                const addedPlayers = playerAdds.map(id => allPlayers[id]?.full_name || `Player ID: ${id}`);
-                const droppedPlayers = playerDrops.map(id => allPlayers[id]?.full_name || `Player ID: ${id}`);
-
-                let teamSummary = [];
-                if (addedPlayers.length > 0) teamSummary.push(`gets ${addedPlayers.join(', ')}`);
-                if (droppedPlayers.length > 0) teamSummary.push(`gives ${droppedPlayers.join(', ')}`);
-
-                if (teamSummary.length > 0) {
-                    givesGets.push(`${teamName} ${teamSummary.join(' and ')}`);
-                }
-            }
-            transactionText = `TRADE: ${givesGets.join('; ')} on ${createdAt}`;
-
-        } else if (transaction.type === 'waiver' || transaction.type === 'free_agent') {
-            // Handle Adds
-            if (transaction.adds) {
-                for (const playerId in transaction.adds) {
-                    const rosterId = transaction.adds[playerId];
-                    const user = Array.from(usersMap.values()).find(u => rostersByUserIdMap.get(u.user_id)?.roster_id === rosterId);
-                    const teamName = getTeamName(user.user_id);
-                    const playerName = allPlayers[playerId]?.full_name || `Player ID: ${playerId}`;
-                    transactionText = `ADD: ${teamName} added ${playerName} on ${createdAt}`;
-                    break; // Only show one add per transaction for simplicity in list item
-                }
-            }
-            // Handle Drops
-            if (transaction.drops && !transaction.adds) { // Only show drops if no add (e.g., direct drop)
-                for (const playerId in transaction.drops) {
-                    const rosterId = transaction.drops[playerId];
-                    const user = Array.from(usersMap.values()).find(u => rostersByUserIdMap.get(u.user_id)?.roster_id === rosterId);
-                    const teamName = getTeamName(user.user_id);
-                    const playerName = allPlayers[playerId]?.full_name || `Player ID: ${playerId}`;
-                    transactionText = `DROP: ${teamName} dropped ${playerName} on ${createdAt}`;
-                    break; // Only show one drop per transaction for simplicity in list item
-                }
-            }
-        } else {
-            // Generic Fallback
-            transactionText = `Transaction Type: ${transaction.type} (ID: ${transaction.transaction_id}) on ${createdAt}`;
-        }
-
-        if (transactionText) {
-            listItem.innerHTML = transactionText;
-            transactionsList.appendChild(listItem);
-            displayCount++;
-        }
-    }
-}
-
 async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
     const users = await fetchUsers();
     const allPlayers = await fetchAllPlayers(); // Fetch all players here
-    const nflState = await fetchNflState(); // Fetch NFL state for current week
 
     let draft = null;
     let draftPicks = [];
@@ -397,7 +267,7 @@ async function displayLeagueInfo() {
 
             if (draft.draft_order) {
                 // Map draft_order (user_id -> pick_number) to display_name or team_name
-                Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - draft.draft_order[b]).forEach(userId => {
+                Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - b.draft_order[b]).forEach(userId => {
                     const user = usersMap.get(userId); // Use usersMap here
                     const rosterForDraftOrder = rostersByUserIdMap.get(userId);
                     const teamNameForDraftOrder = rosterForDraftOrder?.metadata?.team_name || user.display_name || 'Unknown Team';
@@ -481,16 +351,6 @@ async function displayLeagueInfo() {
         } else {
             recentPicksList.innerHTML = '<p>No recent picks available.</p>';
         }
-
-        // Display Recent Trades & Transactions
-        if (nflState && league) {
-            const currentWeek = nflState.week;
-            const transactions = await fetchTransactions(LEAGUE_ID, currentWeek);
-            displayTransactions(transactions, allPlayers, usersMap, rostersByUserIdMap);
-        } else {
-            document.getElementById('transactions-list').innerHTML = '<li>Failed to load NFL state or league data for transactions.</li>';
-        }
-
     } else {
         document.getElementById('teams-container').innerHTML = '<p>Could not load league data. Please check the league ID or try again later.</p>';
         document.getElementById('draft-status').textContent = 'N/A';
@@ -500,7 +360,6 @@ async function displayLeagueInfo() {
         // Update progress bar on failure as well
         document.getElementById('draft-progress-fill').style.width = '0%';
         document.getElementById('draft-progress-text').textContent = '0% complete (0/0 picks)';
-        document.getElementById('transactions-list').innerHTML = '<li>Failed to load transactions due to missing league data.</li>';
     }
 }
 
