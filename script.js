@@ -5,6 +5,7 @@ const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 const SLEEPER_AVATAR_BASE = 'https://sleepercdn.com/avatars/thumbs';
 
 async function fetchAllPlayers() {
+    console.log('fetchAllPlayers function started.');
     const CACHE_KEY = 'allPlayersData';
     const TIMESTAMP_KEY = 'allPlayersTimestamp';
     const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
@@ -12,6 +13,8 @@ async function fetchAllPlayers() {
     const cachedTimestamp = localStorage.getItem(TIMESTAMP_KEY);
     const cachedData = localStorage.getItem(CACHE_KEY);
     const now = Date.now();
+
+    console.log(`Cache check: Data exists? ${!!cachedData}, Timestamp exists? ${!!cachedTimestamp}`);
 
     if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp) < CACHE_DURATION)) {
         console.log('Serving players data from localStorage cache.');
