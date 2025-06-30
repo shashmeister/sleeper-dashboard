@@ -1,41 +1,29 @@
-let cachedPlayers = null;
-let lastFetchTimestamp = 0;
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+// get-players.js
 
-export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow requests from any origin
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+// This is a Vercel Serverless Function that fetches player data from the Sleeper API.
+// It includes caching headers to ensure the data is fetched only once per day,
+// adhering to Sleeper's API guidelines and improving performance.
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    const now = Date.now();
-
-    if (cachedPlayers && (now - lastFetchTimestamp < CACHE_DURATION)) {
-        // Serve from cache
-        console.log('Serving players data from cache.');
-        return res.status(200).json(cachedPlayers);
-    }
-
-    // Fetch new data
+export default async function handler(request, response) {
     try {
-        console.log('Fetching fresh players data from Sleeper API...');
-        const response = await fetch('https://api.sleeper.app/v1/players/nfl');
-        if (!response.ok) {
-            throw new Error(`Sleeper API responded with status: ${response.status}`);
-        }
-        const players = await response.json();
-
-        // Update cache
-        cachedPlayers = players;
-        lastFetchTimestamp = now;
-        console.log('Players data fetched and cached successfully.');
-
-        res.status(200).json(players);
+      const apiResponse = await fetch('https://api.sleeper.app/v1/players/nfl');
+      
+      // If the request to the Sleeper API fails, pass the error status to the client.
+      if (!apiResponse.ok) {
+        return response.status(apiResponse.status).json({ message: 'Failed to fetch data from Sleeper API' });
+      }
+  
+      const data = await apiResponse.json();
+  
+      // Set caching headers for Vercel's Edge Network and the browser.
+      // s-maxage=86400: Caches on the Vercel edge for 24 hours (86400 seconds).
+      // stale-while-revalidate: Allows a stale response to be served while a fresh one is fetched in the background.
+      response.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate');
+  
+      // Send the player data as a JSON response.
+      return response.status(200).json(data);
     } catch (error) {
-        console.error('Error fetching players data:', error);
-        res.status(500).json({ error: 'Failed to fetch player data', details: error.message });
-    } 
-} 
+      console.error('Error in get-players serverless function:', error);
+      return response.status(500).json({ message: 'Internal Server Error' });
+    }
+  }
