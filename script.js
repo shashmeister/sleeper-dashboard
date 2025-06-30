@@ -98,6 +98,30 @@ async function fetchDraftPicks(draftId) {
     }
 }
 
+// Helper function to determine the owner of a given pick number in a snake draft
+function getOwnerOfPick(pickNumber, draftDetails, usersMap, numTeams) {
+    if (!draftDetails || !draftDetails.draft_order || !usersMap || !numTeams) {
+        return null;
+    }
+
+    const round = Math.ceil(pickNumber / numTeams);
+    const pickInRound = (pickNumber - 1) % numTeams; // 0-indexed pick within the round
+
+    let initialDraftOrderIndex;
+    if (round % 2 !== 0) { // Odd rounds (1, 3, 5...) - picks go 0, 1, 2, ..., numTeams-1
+        initialDraftOrderIndex = pickInRound;
+    } else { // Even rounds (2, 4, 6...) - picks go numTeams-1, numTeams-2, ..., 0
+        initialDraftOrderIndex = numTeams - 1 - pickInRound;
+    }
+
+    // Convert draft.draft_order object (userId -> initialPickNumber) to an array ordered by initial pick number
+    const sortedInitialDraftOrderUserIds = Object.keys(draftDetails.draft_order)
+        .sort((a, b) => draftDetails.draft_order[a] - draftDetails.draft_order[b]);
+
+    const ownerUserId = sortedInitialDraftOrderUserIds[initialDraftOrderIndex];
+    return usersMap.get(ownerUserId);
+}
+
 async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters) {
     const playersByRoundContainer = document.getElementById('players-by-round-container');
     playersByRoundContainer.innerHTML = ''; // Clear previous content
@@ -231,6 +255,8 @@ async function displayLeagueInfo() {
         // Create a map to easily look up rosters by user_id
         const rostersByUserIdMap = new Map(rosters.map(roster => [roster.owner_id, roster]));
 
+        const numTeams = league.settings.num_teams; // Declare numTeams once here
+
         // Process draft picks to get drafted players for each team
         const teamDraftedPlayers = new Map(); // Map: roster_id -> [pick objects]
         if (draftPicks.length > 0) {
@@ -279,28 +305,25 @@ async function displayLeagueInfo() {
 
         if (draft && draft.status !== 'complete') {
             const totalRounds = draft.settings.rounds;
-            const numTeams = league.settings.num_teams;
             const totalPicks = totalRounds * numTeams;
             const completedPicks = draftPicks.length;
             const currentPickNumber = completedPicks + 1;
 
-            if (currentPickNumber <= totalPicks) {
-                // On the Clock
-                const onTheClockUserId = draft.draft_order[currentPickNumber];
-                const onTheClockUser = usersMap.get(onTheClockUserId);
-                const onTheClockTeamName = onTheClockUser?.metadata?.team_name || onTheClockUser?.display_name || 'Unknown Team';
+            // On the Clock
+            const onTheClockUser = getOwnerOfPick(currentPickNumber, draft, usersMap, numTeams);
+            if (onTheClockUser) {
+                const onTheClockTeamName = onTheClockUser.metadata?.team_name || onTheClockUser.display_name || 'Unknown Team';
                 onTheClockTeamSpan.textContent = onTheClockTeamName;
                 onTheClockPickSpan.textContent = currentPickNumber;
             } else {
-                onTheClockTeamSpan.textContent = 'Draft Completed!';
+                onTheClockTeamSpan.textContent = 'N/A';
                 onTheClockPickSpan.textContent = '';
             }
 
             // On Deck
-            if (currentPickNumber + 1 <= totalPicks) {
-                const onDeckUserId = draft.draft_order[currentPickNumber + 1];
-                const onDeckUser = usersMap.get(onDeckUserId);
-                const onDeckTeamName = onDeckUser?.metadata?.team_name || onDeckUser?.display_name || 'Unknown Team';
+            const onDeckUser = getOwnerOfPick(currentPickNumber + 1, draft, usersMap, numTeams);
+            if (onTheClockUser && onDeckUser && (currentPickNumber + 1) <= totalPicks) {
+                const onDeckTeamName = onDeckUser.metadata?.team_name || onDeckUser.display_name || 'Unknown Team';
                 onDeckTeamSpan.textContent = onDeckTeamName;
                 onDeckPickSpan.textContent = currentPickNumber + 1;
             } else {
@@ -309,10 +332,9 @@ async function displayLeagueInfo() {
             }
 
             // In the Hole
-            if (currentPickNumber + 2 <= totalPicks) {
-                const inTheHoleUserId = draft.draft_order[currentPickNumber + 2];
-                const inTheHoleUser = usersMap.get(inTheHoleUserId);
-                const inTheHoleTeamName = inTheHoleUser?.metadata?.team_name || inTheHoleUser?.display_name || 'Unknown Team';
+            const inTheHoleUser = getOwnerOfPick(currentPickNumber + 2, draft, usersMap, numTeams);
+            if (onTheClockUser && onDeckUser && inTheHoleUser && (currentPickNumber + 2) <= totalPicks) {
+                const inTheHoleTeamName = inTheHoleUser.metadata?.team_name || inTheHoleUser.display_name || 'Unknown Team';
                 inTheHoleTeamSpan.textContent = inTheHoleTeamName;
                 inTheHolePickSpan.textContent = currentPickNumber + 2;
             } else {
@@ -369,7 +391,6 @@ async function displayLeagueInfo() {
 
         if (draft && draftPicks && league) {
             const totalRounds = draft.settings.rounds || 0;
-            const numTeams = league.settings.num_teams; // Declare once here
             const totalPicks = totalRounds * numTeams;
             const completedPicks = draftPicks.length;
 
@@ -411,7 +432,6 @@ async function displayLeagueInfo() {
                 const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
 
                 // Calculate round number
-                const numTeams = league.settings.num_teams; // Assuming league object is accessible here
                 const roundNumber = Math.ceil(pick.pick_no / numTeams);
 
                 if (player && user) {
