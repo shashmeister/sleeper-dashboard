@@ -3,6 +3,21 @@
 const LEAGUE_ID = '1229429982934077440'; // Your league ID
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
+async function fetchAllPlayers() {
+    try {
+        // Fetch all NFL players from our serverless function
+        const response = await fetch('/api/get-players');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch players from serverless function: ${response.status}`);
+        }
+        const players = await response.json();
+        return players;
+    } catch (error) {
+        logError('Client-side Fetch Error', 'Error fetching all players from serverless function', { originalError: error.message });
+        return {};
+    }
+}
+
 async function fetchLeagueDetails() {
     try {
         const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}`);
@@ -74,7 +89,7 @@ async function fetchDraftPicks(draftId) {
 }
 
 // New function to display players by round
-async function displayPlayersByRound(draftPicks, usersMap, rostersByUserIdMap, league, rosters) {
+async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters) {
     const playersByRoundContainer = document.getElementById('players-by-round-container');
     playersByRoundContainer.innerHTML = ''; // Clear previous content
 
@@ -104,6 +119,7 @@ async function displayPlayersByRound(draftPicks, usersMap, rostersByUserIdMap, l
 
         const picksList = document.createElement('ul');
         picksByRound.get(roundNumber).forEach(pick => {
+            const player = allPlayers[pick.player_id];
             let userIdForPick = pick.metadata.owner_id;
             if (!userIdForPick) {
                 const pickRoster = rosters.find(r => r.roster_id === pick.roster_id);
@@ -115,11 +131,18 @@ async function displayPlayersByRound(draftPicks, usersMap, rostersByUserIdMap, l
             const rosterForPick = rostersByUserIdMap.get(userIdForPick);
             const teamNameForPick = rosterForPick?.metadata?.team_name || (user ? user.display_name : 'Unknown Team');
 
-            const listItem = document.createElement('li');
-            listItem.innerHTML = `
-                Pick ${pick.pick_no} - Player ID: ${pick.player_id} by ${teamNameForPick}
-            `;
-            picksList.appendChild(listItem);
+            if (player) {
+                const listItem = document.createElement('li');
+                const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
+                const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
+
+                listItem.innerHTML = `
+                    Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
+                    ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
+                    by ${teamNameForPick}
+                `;
+                picksList.appendChild(listItem);
+            }
         });
         roundDiv.appendChild(picksList);
         playersByRoundContainer.appendChild(roundDiv);
@@ -127,7 +150,7 @@ async function displayPlayersByRound(draftPicks, usersMap, rostersByUserIdMap, l
 }
 
 // Existing logic for displaying players by team, refactored into a new function
-async function displayPlayersByTeam(rosters, users, usersMap, teamDraftedPlayers, teamsContainer) {
+async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, teamsContainer) {
     teamsContainer.innerHTML = ''; // Clear previous content, including the "Loading teams..." message
     rosters.forEach(roster => {
         const user = usersMap.get(roster.owner_id);
@@ -141,13 +164,19 @@ async function displayPlayersByTeam(rosters, users, usersMap, teamDraftedPlayers
             if (draftedPicks && draftedPicks.length > 0) {
                 const playersList = document.createElement('ul');
                 draftedPicks.sort((a, b) => a.pick_no - b.pick_no).forEach(pick => {
+                    const player = allPlayers[pick.player_id];
+                    if (!player) return;
+
                     const listItem = document.createElement('li');
+                    const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
+                    const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
 
                     const numTeams = users.length; // Use users.length for numTeams, as league might not be available here directly
                     const roundNumber = Math.ceil(pick.pick_no / numTeams);
 
                     listItem.innerHTML = `
-                        Round ${roundNumber}, Pick ${pick.pick_no} - Player ID: ${pick.player_id}
+                        Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
+                        ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
                     `;
                     playersList.appendChild(listItem);
                 });
@@ -167,6 +196,7 @@ async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
     const users = await fetchUsers();
+    const allPlayers = await fetchAllPlayers(); // Fetch all players here
 
     let draft = null;
     let draftPicks = [];
@@ -175,7 +205,7 @@ async function displayLeagueInfo() {
         draftPicks = await fetchDraftPicks(league.draft_id);
     }
 
-    if (league && rosters.length > 0 && users.length > 0) {
+    if (league && rosters.length > 0 && users.length > 0 && allPlayers) {
         // Get references to sections and buttons
         const draftedByTeamSection = document.getElementById('drafted-by-team-section');
         const draftedByRoundSection = document.getElementById('drafted-by-round-section');
@@ -192,7 +222,8 @@ async function displayLeagueInfo() {
         const teamDraftedPlayers = new Map(); // Map: roster_id -> [pick objects]
         if (draftPicks.length > 0) {
             draftPicks.forEach(pick => {
-                if (pick.player_id) {
+                const player = allPlayers[pick.player_id]; // Use allPlayers here
+                if (player) {
                     if (!teamDraftedPlayers.has(pick.roster_id)) {
                         teamDraftedPlayers.set(pick.roster_id, []);
                     }
@@ -202,7 +233,7 @@ async function displayLeagueInfo() {
         }
 
         // Initial display: View by Team
-        displayPlayersByTeam(rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
+        displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
         draftedByRoundSection.style.display = 'none'; // Ensure it's hidden initially
         viewByTeamBtn.classList.add('active'); // Add an active class for styling (you can define this in CSS)
 
@@ -213,7 +244,7 @@ async function displayLeagueInfo() {
             viewByTeamBtn.classList.add('active');
             viewByRoundBtn.classList.remove('active');
             // Re-render by team in case data changed
-            displayPlayersByTeam(rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
+            displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDraftedPlayers, document.getElementById('teams-container'));
         });
 
         viewByRoundBtn.addEventListener('click', () => {
@@ -222,7 +253,7 @@ async function displayLeagueInfo() {
             viewByTeamBtn.classList.remove('active');
             viewByRoundBtn.classList.add('active');
             // Render by round
-            displayPlayersByRound(draftPicks, usersMap, rostersByUserIdMap, league, rosters);
+            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters);
         });
 
         // Display Draft Details
@@ -282,11 +313,12 @@ async function displayLeagueInfo() {
         const recentPicksList = document.getElementById('recent-picks-list');
         recentPicksList.innerHTML = ''; // Clear loading text
 
-        if (draftPicks.length > 0) {
+        if (draftPicks.length > 0 && allPlayers) {
             // Get the last 5 picks or fewer if less than 5 picks have been made
             const lastFivePicks = draftPicks.slice(-5);
 
             lastFivePicks.reverse().forEach(pick => {
+                const player = allPlayers[pick.player_id];
                 let userIdForPick = pick.metadata.owner_id; // Prioritize owner_id from metadata
 
                 if (!userIdForPick) {
@@ -298,8 +330,10 @@ async function displayLeagueInfo() {
                 }
                 const user = usersMap.get(userIdForPick);
 
-                if (user) {
+                if (player && user) {
                     const listItem = document.createElement('li');
+                    const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
+                    const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
                     const rosterForPick = rostersByUserIdMap.get(userIdForPick);
                     const teamNameForPick = rosterForPick?.metadata?.team_name || user.display_name || 'Unknown Team';
 
@@ -308,7 +342,9 @@ async function displayLeagueInfo() {
                     const roundNumber = Math.ceil(pick.pick_no / numTeams);
 
                     listItem.innerHTML = `
-                        Round ${roundNumber}, Pick ${pick.pick_no} - Player ID: ${pick.player_id} by ${teamNameForPick}
+                        Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
+                        ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
+                        by ${teamNameForPick}
                     `;
                     recentPicksList.appendChild(listItem);
                 }
@@ -319,8 +355,8 @@ async function displayLeagueInfo() {
 
     } else {
         document.getElementById('teams-container').innerHTML = '<p>Could not load league data. Please check the league ID or try again later.</p>';
-        document.getElementById('draft-status').textContent = 'Failed to load';
-        document.getElementById('draft-type').textContent = 'Failed to load';
+        document.getElementById('draft-status').textContent = 'N/A';
+        document.getElementById('draft-type').textContent = 'N/A';
         document.getElementById('draft-order-list').innerHTML = '<li>Failed to load draft order.</li>';
         document.getElementById('recent-picks-list').innerHTML = '<p>Failed to load recent picks.</p>';
         // Update progress bar on failure as well
