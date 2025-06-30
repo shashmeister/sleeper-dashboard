@@ -215,49 +215,26 @@ h2 {
     font-size: 1.1em;
 }
 
-#draft-order-list li {
-    margin-bottom: 5px;
-}
-
-/* Styling for recent picks */
+#draft-order-list li,
 #recent-picks-list li {
-    padding: 8px 0;
-    border-bottom: 1px dashed var(--list-border);
-    font-size: 0.95em;
+    margin-bottom: 5px;
+    line-height: 1.4;
 }
 
-#recent-picks-list li:last-child {
-    border-bottom: none;
-}
-
-/* Styling for Recent Transactions Section */
-#transactions-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-#transactions-list li {
-    background-color: var(--card-bg);
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    border: 1px solid var(--card-border);
-    font-size: 0.95em;
-    color: var(--text-primary);
-}
-
-#transactions-list li strong {
-    color: var(--heading-color);
+#recent-picks-list li a,
+#draft-order-list li a {
+    color: var(--heading-color); /* Ensure links are readable in dark mode */
+    text-decoration: none;
+    font-weight: bold;
 }
 
 /* Styling for Error Log Section */
 #error-log-section {
+    background-color: var(--bg-secondary);
+    padding: 20px;
     margin-top: 30px; /* Space above the error section */
-    padding: 25px;
     border: 1px solid var(--section-border);
     border-radius: 8px;
-    background-color: var(--section-bg);
 }
 
 #error-log-section h2 {
