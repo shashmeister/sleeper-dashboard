@@ -230,6 +230,27 @@ h2 {
     border-bottom: none;
 }
 
+/* Styling for Recent Transactions Section */
+#transactions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#transactions-list li {
+    background-color: var(--card-bg);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    font-size: 0.95em;
+    color: var(--text-primary);
+}
+
+#transactions-list li strong {
+    color: var(--heading-color);
+}
+
 /* Styling for Error Log Section */
 #error-log-section {
     margin-top: 30px; /* Space above the error section */
