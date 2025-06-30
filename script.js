@@ -15,7 +15,7 @@ async function fetchLeagueDetails() {
 
         return league;
     } catch (error) {
-        console.error('Error fetching league details:', error);
+        logError('API Error', 'Error fetching league details', { originalError: error.message });
         document.getElementById('league-name').textContent = 'Failed to load league name';
         return null;
     }
@@ -27,7 +27,7 @@ async function fetchRosters() {
         const rosters = await response.json();
         return rosters;
     } catch (error) {
-        console.error('Error fetching rosters:', error);
+        logError('API Error', 'Error fetching rosters', { originalError: error.message });
         return [];
     }
 }
@@ -38,7 +38,7 @@ async function fetchUsers() {
         const users = await response.json();
         return users;
     } catch (error) {
-        console.error('Error fetching users:', error);
+        logError('API Error', 'Error fetching users', { originalError: error.message });
         return [];
     }
 }
@@ -53,7 +53,7 @@ async function fetchDraftDetails(draftId) {
         const draft = await response.json();
         return draft;
     } catch (error) {
-        console.error('Error fetching draft details:', error);
+        logError('API Error', `Error fetching draft details for ID: ${draftId}`, { originalError: error.message });
         return null;
     }
 }
@@ -68,7 +68,7 @@ async function fetchDraftPicks(draftId) {
         const picks = await response.json();
         return picks;
     } catch (error) {
-        console.error('Error fetching draft picks:', error);
+        logError('API Error', `Error fetching draft picks for ID: ${draftId}`, { originalError: error.message });
         return [];
     }
 }
@@ -356,4 +356,93 @@ function setupDarkModeToggle() {
 document.addEventListener('DOMContentLoaded', () => {
     displayLeagueInfo();
     setupDarkModeToggle(); // Call the dark mode setup function
+});
+
+// --- Error Logging Functions ---
+
+function logError(errorType, message, errorDetails = {}) {
+    const errorLogSection = document.getElementById('error-log-section');
+    const errorLogContainer = document.getElementById('error-log-container');
+
+    if (errorLogSection) {
+        errorLogSection.style.display = 'block'; // Make the section visible
+    }
+
+    const errorEntry = document.createElement('div');
+    errorEntry.classList.add('error-log-entry');
+
+    let detailsHtml = '';
+    for (const key in errorDetails) {
+        detailsHtml += `<strong>${key}:</strong> ${JSON.stringify(errorDetails[key])}<br>`;
+    }
+
+    errorEntry.innerHTML = `
+        <p><strong>Error Type:</strong> ${errorType}</p>
+        <p><strong>Message:</strong> ${message}</p>
+        ${detailsHtml ? `<p>${detailsHtml}</p>` : ''}
+        <p><small>Timestamp: ${new Date().toLocaleString()}</small></p>
+        <hr>
+    `;
+
+    if (errorLogContainer) {
+        errorLogContainer.prepend(errorEntry); // Add new errors to the top
+    }
+
+    console.error(`[${errorType}] ${message}`, errorDetails);
+
+    // Store error in local storage (optional, for persistence across reloads)
+    const storedErrors = JSON.parse(localStorage.getItem('appErrors') || '[]');
+    storedErrors.unshift({ errorType, message, errorDetails, timestamp: new Date().toISOString() });
+    localStorage.setItem('appErrors', JSON.stringify(storedErrors.slice(0, 50))); // Keep last 50 errors
+}
+
+// Global error handler for uncaught JavaScript errors
+window.onerror = function(message, source, lineno, colno, error) {
+    logError('Unhandled JavaScript Error', message, {
+        source: source,
+        line: lineno,
+        column: colno,
+        errorObject: error ? error.toString() : 'N/A'
+    });
+    // Return true to prevent the browser's default error handling (e.g., console output)
+    return true;
+};
+
+// Clear Errors button functionality
+document.addEventListener('DOMContentLoaded', () => {
+    const clearErrorsBtn = document.getElementById('clear-errors-btn');
+    const errorLogContainer = document.getElementById('error-log-container');
+    const errorLogSection = document.getElementById('error-log-section');
+
+    if (clearErrorsBtn && errorLogContainer) {
+        clearErrorsBtn.addEventListener('click', () => {
+            errorLogContainer.innerHTML = '';
+            localStorage.removeItem('appErrors');
+            if (errorLogSection) {
+                errorLogSection.style.display = 'none'; // Hide section after clearing
+            }
+        });
+    }
+
+    // Load existing errors from localStorage on page load
+    const storedErrors = JSON.parse(localStorage.getItem('appErrors') || '[]');
+    if (storedErrors.length > 0 && errorLogContainer) {
+        errorLogSection.style.display = 'block';
+        storedErrors.forEach(err => {
+            const errorEntry = document.createElement('div');
+            errorEntry.classList.add('error-log-entry');
+            let detailsHtml = '';
+            for (const key in err.errorDetails) {
+                detailsHtml += `<strong>${key}:</strong> ${JSON.stringify(err.errorDetails[key])}<br>`;
+            }
+            errorEntry.innerHTML = `
+                <p><strong>Error Type:</strong> ${err.errorType}</p>
+                <p><strong>Message:</strong> ${err.message}</p>
+                ${detailsHtml ? `<p>${detailsHtml}</p>` : ''}
+                <p><small>Timestamp: ${new Date(err.timestamp).toLocaleString()}</small></p>
+                <hr>
+            `;
+            errorLogContainer.appendChild(errorEntry); // Append existing errors
+        });
+    }
 });
