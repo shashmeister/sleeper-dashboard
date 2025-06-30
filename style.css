@@ -230,5 +230,68 @@ h2 {
     border-bottom: none;
 }
 
+/* Styling for Error Log Section */
+#error-log-section {
+    margin-top: 30px; /* Space above the error section */
+    padding: 25px;
+    border: 1px solid var(--section-border);
+    border-radius: 8px;
+    background-color: var(--section-bg);
+}
+
+#error-log-section h2 {
+    color: var(--heading-color);
+    border-bottom: 2px solid var(--section-border);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+#error-log-container {
+    max-height: 300px; /* Limit height and make it scrollable */
+    overflow-y: auto;
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid var(--list-border);
+    background-color: var(--card-bg);
+    border-radius: 5px;
+}
+
+.error-log-entry {
+    background-color: rgba(255, 0, 0, 0.05); /* Light red background for errors */
+    border-left: 5px solid red;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    color: var(--text-primary);
+    word-wrap: break-word;
+}
+
+.error-log-entry p {
+    margin: 5px 0;
+}
+
+.error-log-entry strong {
+    color: var(--card-heading);
+}
+
+.error-log-entry small {
+    color: var(--text-secondary);
+}
+
+#clear-errors-btn {
+    background-color: #dc3545; /* Red color for a clear button */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+}
+
+#clear-errors-btn:hover {
+    background-color: #c82333;
+}
+
 
 
