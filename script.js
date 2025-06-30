@@ -269,6 +269,65 @@ async function displayLeagueInfo() {
             displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters);
         });
 
+        // Display Current Draft Status (On the Clock, On Deck, In the Hole)
+        const onTheClockTeamSpan = document.getElementById('on-the-clock-team');
+        const onTheClockPickSpan = document.getElementById('on-the-clock-pick');
+        const onDeckTeamSpan = document.getElementById('on-deck-team');
+        const onDeckPickSpan = document.getElementById('on-deck-pick');
+        const inTheHoleTeamSpan = document.getElementById('in-the-hole-team');
+        const inTheHolePickSpan = document.getElementById('in-the-hole-pick');
+
+        if (draft && draft.status !== 'complete') {
+            const totalRounds = draft.settings.rounds;
+            const numTeams = league.settings.num_teams;
+            const totalPicks = totalRounds * numTeams;
+            const completedPicks = draftPicks.length;
+            const currentPickNumber = completedPicks + 1;
+
+            if (currentPickNumber <= totalPicks) {
+                // On the Clock
+                const onTheClockUserId = draft.draft_order[currentPickNumber];
+                const onTheClockUser = usersMap.get(onTheClockUserId);
+                const onTheClockTeamName = onTheClockUser?.metadata?.team_name || onTheClockUser?.display_name || 'Unknown Team';
+                onTheClockTeamSpan.textContent = onTheClockTeamName;
+                onTheClockPickSpan.textContent = currentPickNumber;
+            } else {
+                onTheClockTeamSpan.textContent = 'Draft Completed!';
+                onTheClockPickSpan.textContent = '';
+            }
+
+            // On Deck
+            if (currentPickNumber + 1 <= totalPicks) {
+                const onDeckUserId = draft.draft_order[currentPickNumber + 1];
+                const onDeckUser = usersMap.get(onDeckUserId);
+                const onDeckTeamName = onDeckUser?.metadata?.team_name || onDeckUser?.display_name || 'Unknown Team';
+                onDeckTeamSpan.textContent = onDeckTeamName;
+                onDeckPickSpan.textContent = currentPickNumber + 1;
+            } else {
+                onDeckTeamSpan.textContent = 'N/A';
+                onDeckPickSpan.textContent = '';
+            }
+
+            // In the Hole
+            if (currentPickNumber + 2 <= totalPicks) {
+                const inTheHoleUserId = draft.draft_order[currentPickNumber + 2];
+                const inTheHoleUser = usersMap.get(inTheHoleUserId);
+                const inTheHoleTeamName = inTheHoleUser?.metadata?.team_name || inTheHoleUser?.display_name || 'Unknown Team';
+                inTheHoleTeamSpan.textContent = inTheHoleTeamName;
+                inTheHolePickSpan.textContent = currentPickNumber + 2;
+            } else {
+                inTheHoleTeamSpan.textContent = 'N/A';
+                inTheHolePickSpan.textContent = '';
+            }
+        } else {
+            onTheClockTeamSpan.textContent = 'Draft Completed!';
+            onTheClockPickSpan.textContent = '';
+            onDeckTeamSpan.textContent = 'N/A';
+            onDeckPickSpan.textContent = '';
+            inTheHoleTeamSpan.textContent = 'N/A';
+            inTheHolePickSpan.textContent = '';
+        }
+
         // Display Draft Details
         const draftStatusSpan = document.getElementById('draft-status');
         const draftTypeSpan = document.getElementById('draft-type');
