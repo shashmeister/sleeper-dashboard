@@ -5,17 +5,40 @@ const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 const SLEEPER_AVATAR_BASE = 'https://sleepercdn.com/avatars/thumbs';
 
 async function fetchAllPlayers() {
+    const CACHE_KEY = 'allPlayersData';
+    const TIMESTAMP_KEY = 'allPlayersTimestamp';
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    const cachedTimestamp = localStorage.getItem(TIMESTAMP_KEY);
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    const now = Date.now();
+
+    if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp) < CACHE_DURATION)) {
+        console.log('Serving players data from localStorage cache.');
+        return JSON.parse(cachedData);
+    }
+
     try {
-        // Fetch all NFL players directly from the Sleeper API
+        console.log('Fetching fresh players data from Sleeper API...');
         const response = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
         if (!response.ok) {
             throw new Error(`Failed to fetch players from Sleeper API: ${response.status}`);
         }
         const players = await response.json();
+
+        localStorage.setItem(CACHE_KEY, JSON.stringify(players));
+        localStorage.setItem(TIMESTAMP_KEY, now.toString());
+        console.log('Players data fetched and cached in localStorage.');
+
         return players;
     } catch (error) {
         logError('Client-side Fetch Error', 'Error fetching all players from Sleeper API', { originalError: error.message });
-        return {};
+        // If the API fails, still try to return the old cached data if it exists
+        if (cachedData) {
+            console.warn('API fetch failed. Serving stale data from cache.');
+            return JSON.parse(cachedData);
+        }
+        return {}; // Return empty object if there's no cache and the fetch fails
     }
 }
 
