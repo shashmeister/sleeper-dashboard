@@ -62,8 +62,7 @@ header {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Space out items */
-    padding: 1.5rem 30px; /* Add horizontal padding for the button */
+    position: relative; /* Add for absolute positioning of toggle */
 }
 
 header h1 {
@@ -85,7 +84,10 @@ header #dark-mode-toggle {
     font-size: 0.9em;
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease;
-    margin-left: 20px; /* Space from the league name/avatar */
+    position: absolute; /* Position independently */
+    right: 30px; /* Align to the right with padding */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%); /* Adjust for perfect vertical centering */
 }
 
 header #dark-mode-toggle:hover {
