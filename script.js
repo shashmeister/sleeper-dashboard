@@ -138,7 +138,7 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
             }
             const user = usersMap.get(userIdForPick);
             const rosterForPick = rostersByUserIdMap.get(userIdForPick);
-            const teamNameForPick = rosterForPick?.metadata?.team_name || (user ? user.display_name : 'Unknown Team');
+            const teamNameForPick = user?.metadata?.team_name || (user ? user.display_name : 'Unknown Team');
 
             if (player) {
                 const listItem = document.createElement('li');
@@ -164,7 +164,7 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
     rosters.forEach(roster => {
         const user = usersMap.get(roster.owner_id);
         if (user) {
-            const teamName = roster.metadata?.team_name || user.display_name || 'Unnamed Team';
+            const teamName = user.metadata?.team_name || user.display_name || 'Unnamed Team';
             const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
             const teamCard = document.createElement('div');
             teamCard.classList.add('team-card');
@@ -284,7 +284,7 @@ async function displayLeagueInfo() {
                 Object.keys(draft.draft_order).sort((a,b) => draft.draft_order[a] - draft.draft_order[b]).forEach(userId => {
                     const user = usersMap.get(userId); // Use usersMap here
                     const rosterForDraftOrder = rostersByUserIdMap.get(userId);
-                    const teamNameForDraftOrder = rosterForDraftOrder?.metadata?.team_name || user.display_name || 'Unknown Team';
+                    const teamNameForDraftOrder = user.metadata?.team_name || user.display_name || 'Unknown Team';
                     const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
                     const pickNumber = draft.draft_order[userId];
                     const listItem = document.createElement('li');
@@ -348,7 +348,7 @@ async function displayLeagueInfo() {
                 }
                 const user = usersMap.get(userIdForPick);
                 const rosterForPick = rostersByUserIdMap.get(userIdForPick);
-                const teamNameForPick = rosterForPick?.metadata?.team_name || user.display_name || 'Unknown Team';
+                const teamNameForPick = user?.metadata?.team_name || (user ? user.display_name : 'Unknown Team');
                 const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
 
                 // Calculate round number
