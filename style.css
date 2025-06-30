@@ -291,5 +291,14 @@ h2 {
     background-color: #c82333;
 }
 
+.avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 8px;
+    border: 1px solid var(--section-border);
+}
+
 
 

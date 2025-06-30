@@ -2,6 +2,7 @@
 
 const LEAGUE_ID = '1229429982934077440'; // Your league ID
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
+const SLEEPER_AVATAR_BASE = 'https://sleepercdn.com/avatars/thumbs';
 
 async function fetchAllPlayers() {
     try {
@@ -129,6 +130,7 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
             const user = usersMap.get(userIdForPick);
             const rosterForPick = rostersByUserIdMap.get(userIdForPick);
             const teamNameForPick = rosterForPick?.metadata?.team_name || (user ? user.display_name : 'Unknown Team');
+            const avatarUrl = user && user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
 
             if (player) {
                 const listItem = document.createElement('li');
@@ -138,7 +140,8 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
                 listItem.innerHTML = `
                     Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                     ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                    by ${teamNameForPick}
+                    by ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
+                    ${teamNameForPick}
                 `;
                 picksList.appendChild(listItem);
             }
@@ -155,9 +158,13 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
         const user = usersMap.get(roster.owner_id);
         if (user) {
             const teamName = roster.metadata?.team_name || user.display_name || 'Unnamed Team';
+            const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
             const teamCard = document.createElement('div');
             teamCard.classList.add('team-card');
-            teamCard.innerHTML = `<h3>${teamName}</h3>`;
+            teamCard.innerHTML = `<h3>
+                ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
+                ${teamName}
+            </h3>`;
 
             const draftedPicks = teamDraftedPlayers.get(roster.roster_id);
             if (draftedPicks && draftedPicks.length > 0) {
@@ -169,6 +176,7 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
                     const listItem = document.createElement('li');
                     const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
                     const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
+                    const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
 
                     const numTeams = users.length; // Use users.length for numTeams, as league might not be available here directly
                     const roundNumber = Math.ceil(pick.pick_no / numTeams);
@@ -176,6 +184,8 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
                     listItem.innerHTML = `
                         Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
+                        by ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
+                        ${teamName}
                     `;
                     playersList.appendChild(listItem);
                 });
@@ -271,9 +281,14 @@ async function displayLeagueInfo() {
                     const user = usersMap.get(userId); // Use usersMap here
                     const rosterForDraftOrder = rostersByUserIdMap.get(userId);
                     const teamNameForDraftOrder = rosterForDraftOrder?.metadata?.team_name || user.display_name || 'Unknown Team';
+                    const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
                     const pickNumber = draft.draft_order[userId];
                     const listItem = document.createElement('li');
-                    listItem.textContent = `Pick ${pickNumber}: ${teamNameForDraftOrder}`;
+                    listItem.innerHTML = `
+                        Pick ${pickNumber}: 
+                        ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
+                        ${teamNameForDraftOrder}
+                    `;
                     draftOrderList.appendChild(listItem);
                 });
             } else {
@@ -328,22 +343,24 @@ async function displayLeagueInfo() {
                     }
                 }
                 const user = usersMap.get(userIdForPick);
+                const rosterForPick = rostersByUserIdMap.get(userIdForPick);
+                const teamNameForPick = rosterForPick?.metadata?.team_name || user.display_name || 'Unknown Team';
+                const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+
+                // Calculate round number
+                const numTeams = league.settings.num_teams; // Assuming league object is accessible here
+                const roundNumber = Math.ceil(pick.pick_no / numTeams);
 
                 if (player && user) {
                     const listItem = document.createElement('li');
                     const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
                     const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
-                    const rosterForPick = rostersByUserIdMap.get(userIdForPick);
-                    const teamNameForPick = rosterForPick?.metadata?.team_name || user.display_name || 'Unknown Team';
-
-                    // Calculate round number
-                    const numTeams = league.settings.num_teams; // Assuming league object is accessible here
-                    const roundNumber = Math.ceil(pick.pick_no / numTeams);
 
                     listItem.innerHTML = `
                         Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                        by ${teamNameForPick}
+                        by ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
+                        ${teamNameForPick}
                     `;
                     recentPicksList.appendChild(listItem);
                 }
