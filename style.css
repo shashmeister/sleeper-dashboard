@@ -66,6 +66,18 @@ header h1 {
     margin: 0;
     font-size: 2.5em;
     letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center horizontally */
+}
+
+.league-avatar {
+    width: 50px; /* Adjust size as needed */
+    height: 50px; /* Adjust size as needed */
+    border-radius: 50%; /* Make it round */
+    margin-right: 15px; /* Space between avatar and league name */
+    border: 2px solid var(--header-text); /* Optional: add a border */
+    object-fit: cover; /* Ensures the image covers the area without distortion */
 }
 
 header p {

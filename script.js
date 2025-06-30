@@ -23,7 +23,16 @@ async function fetchLeagueDetails() {
     try {
         const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}`);
         const league = await response.json();
+        
+        // Update league name and avatar
         document.getElementById('league-name').textContent = league.name;
+        const leagueAvatar = document.getElementById('league-avatar');
+        if (league.avatar) {
+            leagueAvatar.src = `${SLEEPER_AVATAR_BASE}/${league.avatar}`;
+            leagueAvatar.style.display = 'inline-block'; // Ensure it's visible
+        } else {
+            leagueAvatar.style.display = 'none'; // Hide if no avatar
+        }
         
         // Display additional league details
         document.getElementById('league-season').textContent = league.season;
