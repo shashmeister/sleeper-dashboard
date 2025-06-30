@@ -1,8 +1,0 @@
-{
-  "builds": [
-    { "src": "get-players.js", "use": "@vercel/node" }
-  ],
-  "rewrites": [
-    { "source": "/api/get-players", "destination": "/get-players.js" }
-  ]
-}

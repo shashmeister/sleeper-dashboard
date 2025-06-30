@@ -6,15 +6,15 @@ const SLEEPER_AVATAR_BASE = 'https://sleepercdn.com/avatars/thumbs';
 
 async function fetchAllPlayers() {
     try {
-        // Fetch all NFL players from our serverless function
-        const response = await fetch('/api/get-players');
+        // Fetch all NFL players directly from the Sleeper API
+        const response = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch players from serverless function: ${response.status}`);
+            throw new Error(`Failed to fetch players from Sleeper API: ${response.status}`);
         }
         const players = await response.json();
         return players;
     } catch (error) {
-        logError('Client-side Fetch Error', 'Error fetching all players from serverless function', { originalError: error.message });
+        logError('Client-side Fetch Error', 'Error fetching all players from Sleeper API', { originalError: error.message });
         return {};
     }
 }
