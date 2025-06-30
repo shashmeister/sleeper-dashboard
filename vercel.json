@@ -1,7 +1,5 @@
 {
-  "functions": {
-    "vercel-api/**/*.js": {
-      "maxDuration": 10
-    }
-  }
+  "builds": [
+    { "src": "vercel-api/get-players.js", "use": "@vercel/node" }
+  ]
 }
