@@ -60,6 +60,10 @@ header {
     padding: 1.5rem 0;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space out items */
+    padding: 1.5rem 30px; /* Add horizontal padding for the button */
 }
 
 header h1 {
@@ -69,6 +73,24 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: center; /* Center horizontally */
+    flex-grow: 1; /* Allow H1 to take available space */
+}
+
+header #dark-mode-toggle {
+    background: none;
+    border: 1px solid var(--header-text);
+    color: var(--header-text);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    margin-left: 20px; /* Space from the league name/avatar */
+}
+
+header #dark-mode-toggle:hover {
+    background-color: var(--header-text);
+    color: var(--header-bg);
 }
 
 .league-avatar {
