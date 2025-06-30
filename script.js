@@ -7,7 +7,7 @@ const SLEEPER_AVATAR_BASE = 'https://sleepercdn.com/avatars/thumbs';
 async function fetchAllPlayers() {
     try {
         // Fetch all NFL players from our serverless function
-        const response = await fetch('/api/get-players');
+        const response = await fetch('/vercel-api/get-players');
         if (!response.ok) {
             throw new Error(`Failed to fetch players from serverless function: ${response.status}`);
         }
