@@ -130,7 +130,6 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
             const user = usersMap.get(userIdForPick);
             const rosterForPick = rostersByUserIdMap.get(userIdForPick);
             const teamNameForPick = rosterForPick?.metadata?.team_name || (user ? user.display_name : 'Unknown Team');
-            const avatarUrl = user && user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
 
             if (player) {
                 const listItem = document.createElement('li');
@@ -140,8 +139,7 @@ async function displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersBy
                 listItem.innerHTML = `
                     Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                     ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                    by ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
-                    ${teamNameForPick}
+                    by ${teamNameForPick}
                 `;
                 picksList.appendChild(listItem);
             }
@@ -176,7 +174,6 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
                     const listItem = document.createElement('li');
                     const formattedName = player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : '';
                     const nflProfileUrl = formattedName ? `https://www.nfl.com/players/${formattedName}/` : '#';
-                    const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
 
                     const numTeams = users.length; // Use users.length for numTeams, as league might not be available here directly
                     const roundNumber = Math.ceil(pick.pick_no / numTeams);
@@ -184,8 +181,6 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
                     listItem.innerHTML = `
                         Round ${roundNumber}, Pick ${pick.pick_no} - <a href="${nflProfileUrl}" target="_blank" rel="noopener noreferrer">${player.full_name}</a> (${player.position}, ${player.team || 'N/A'})
                         ${player.bye_week ? `(Bye: ${player.bye_week})` : ''}
-                        by ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
-                        ${teamName}
                     `;
                     playersList.appendChild(listItem);
                 });
