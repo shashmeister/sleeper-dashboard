@@ -91,6 +91,68 @@ async function fetchAllPlayers() {
     }
 }
 
+async function fetchNews() {
+    const NEWS_CACHE_KEY = 'nflNewsData';
+    const NEWS_TIMESTAMP_KEY = 'nflNewsTimestamp';
+    const NEWS_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+
+    try {
+        const db = await openDB();
+        const cachedTimestamp = await getFromDB(db, NEWS_TIMESTAMP_KEY);
+        const now = Date.now();
+
+        if (cachedTimestamp && (now - cachedTimestamp < NEWS_CACHE_DURATION)) {
+            console.log('Serving news from IndexedDB cache.');
+            const cachedData = await getFromDB(db, NEWS_CACHE_KEY);
+            if (cachedData) {
+                return cachedData;
+            }
+        }
+    } catch (dbError) {
+        console.error('IndexedDB cache read failed for news. Will fetch from network.', dbError);
+    }
+
+    try {
+        console.log('Fetching fresh news data from ESPN API...');
+        // Note: This is an unofficial, public endpoint.
+        const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch news from ESPN API: ${response.status}`);
+        }
+        const newsData = await response.json();
+        
+        try {
+            const db = await openDB();
+            await setInDB(db, NEWS_CACHE_KEY, newsData.articles);
+            await setInDB(db, NEWS_TIMESTAMP_KEY, Date.now());
+            console.log('News data fetched and cached in IndexedDB.');
+        } catch (dbError) {
+            console.error('IndexedDB cache write failed for news.', dbError);
+        }
+
+        return newsData.articles;
+    } catch (fetchError) {
+        logError('API Error', 'Error fetching news', { originalError: fetchError.message });
+        return []; // Return empty array on failure
+    }
+}
+
+function displayNews(articles) {
+    const newsContainer = document.getElementById('news-container');
+    if (!articles || articles.length === 0) {
+        newsContainer.innerHTML = '<p>No news available at the moment.</p>';
+        return;
+    }
+
+    newsContainer.innerHTML = articles.slice(0, 10).map(article => `
+        <article class="news-article">
+            <h4><a href="${article.links.web.href}" target="_blank" rel="noopener noreferrer">${article.headline}</a></h4>
+            <p>${article.description}</p>
+            <small>${new Date(article.published).toLocaleString()}</small>
+        </article>
+    `).join('');
+}
+
 async function fetchLeagueDetails() {
     try {
         const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}`);
@@ -282,6 +344,11 @@ async function displayLeagueInfo() {
     const rosters = await fetchRosters();
     const users = await fetchUsers();
     const allPlayers = await fetchAllPlayers(); // Fetch all players here
+    const newsArticles = await fetchNews(); // Fetch news here
+
+    if (newsArticles) {
+        displayNews(newsArticles);
+    }
 
     let draft = null;
     let draftPicks = [];

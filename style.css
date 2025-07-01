@@ -336,5 +336,41 @@ h2 {
     border: 1px solid var(--section-border);
 }
 
+/* News Section */
+#news-section {
+    margin-bottom: 2rem;
+}
+
+.news-article {
+    background-color: var(--card-bg);
+    border: 1px solid var(--section-border);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 1rem;
+}
+
+.news-article h4 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+.news-article h4 a {
+    color: var(--heading-color);
+    text-decoration: none;
+}
+
+.news-article h4 a:hover {
+    text-decoration: underline;
+}
+
+.news-article p {
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.news-article small {
+    color: var(--text-muted-color, #6c757d); /* Fallback color */
+}
+
 
 
