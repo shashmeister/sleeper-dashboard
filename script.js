@@ -2257,27 +2257,40 @@ class PlayerSearch {
         this.resultsContainer = document.getElementById('player-search-results');
         this.suggestionsContainer = document.getElementById('search-suggestions');
         
+        console.log('DOM elements found:');
+        console.log('- searchInput:', !!this.searchInput);
+        console.log('- clearBtn:', !!this.clearBtn);
+        console.log('- resultsContainer:', !!this.resultsContainer);
+        console.log('- suggestionsContainer:', !!this.suggestionsContainer);
+        
         if (!this.searchInput) {
             console.log('Player search elements not ready yet, waiting...');
             setTimeout(() => this.initElements(), 100);
             return;
         }
         
+        console.log('Setting up event listeners...');
         this.setupEventListeners();
         this.setupExampleClickHandlers();
+        
+        // Immediately try to load player data when the search is available
+        this.loadPlayerData();
     }
     
     setupEventListeners() {
         // Search input with debouncing for autocomplete
         this.searchInput.addEventListener('input', (e) => {
+            console.log('Input event triggered, value:', e.target.value);
             clearTimeout(this.searchTimeout);
             const query = e.target.value.trim();
             
             if (query.length >= 2) {
+                console.log('Query length >= 2, setting timeout for:', query);
                 this.searchTimeout = setTimeout(() => {
                     this.showSuggestions(query);
                 }, 200);
             } else {
+                console.log('Query too short, hiding suggestions');
                 this.hideSuggestions();
             }
         });
@@ -2337,12 +2350,15 @@ class PlayerSearch {
     
     async loadPlayerData() {
         try {
+            console.log('Loading player data...');
             // Fetch all required data
             const [players, rosters, users] = await Promise.all([
                 fetchAllPlayers(),
                 fetchRosters(),
                 fetchUsers()
             ]);
+            
+            console.log('Fetched data - players:', Object.keys(players || {}).length, 'rosters:', rosters?.length, 'users:', users?.length);
             
             // Store league data for ownership lookups
             this.leagueData = {
@@ -2396,13 +2412,22 @@ class PlayerSearch {
     }
     
     showSuggestions(query) {
+        console.log('showSuggestions called with query:', query);
+        console.log('allPlayers length:', this.allPlayers.length);
+        
         if (this.allPlayers.length === 0) {
-            this.loadPlayerData();
+            console.log('No player data, loading...');
+            this.loadPlayerData().then(() => {
+                // Retry after data loads
+                if (this.allPlayers.length > 0) {
+                    this.showSuggestions(query);
+                }
+            });
             return;
         }
         
         const matches = this.allPlayers
-            .filter(player => player.searchName.includes(query.toLowerCase()))
+            .filter(player => player.searchName && player.searchName.includes(query.toLowerCase()))
             .slice(0, 8) // Limit to 8 suggestions
             .sort((a, b) => {
                 // Prioritize exact matches at the start of the name
@@ -2419,6 +2444,8 @@ class PlayerSearch {
                 
                 return posA - posB;
             });
+        
+        console.log('Found matches:', matches.length);
         
         if (matches.length > 0) {
             this.displaySuggestions(matches);
