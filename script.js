@@ -581,9 +581,11 @@ function setupTabNavigation() {
             // Activate the clicked tab
             tab.classList.add('active');
 
-            // Load teams data if teams tab is clicked
+            // Load data based on tab
             if (targetPageId === 'teams-page') {
                 displayTeamsOverview();
+            } else if (targetPageId === 'standings-page') {
+                displayStandings();
             }
         });
     });
@@ -627,6 +629,203 @@ function switchToTeamsTab() {
 
     // Load teams data if not already loaded
     displayTeamsOverview();
+}
+
+async function displayStandings() {
+    const standingsContainer = document.getElementById('standings-container');
+    const playoffContainer = document.getElementById('playoff-picture-container');
+    
+    // Use cached data if available
+    if (globalLeagueData.rosters && globalLeagueData.users) {
+        renderStandings(standingsContainer, playoffContainer, globalLeagueData);
+        return;
+    }
+
+    // Fetch fresh data
+    standingsContainer.innerHTML = '<p>Loading standings...</p>';
+    playoffContainer.innerHTML = '<p>Loading playoff picture...</p>';
+    
+    try {
+        const league = await fetchLeagueDetails();
+        const rosters = await fetchRosters();
+        const users = await fetchUsers();
+        const allPlayers = await fetchAllPlayers();
+        let draftPicks = [];
+        
+        if (league && league.draft_id) {
+            draftPicks = await fetchDraftPicks(league.draft_id);
+        }
+
+        // Store in global cache
+        globalLeagueData = {
+            league,
+            rosters,
+            users,
+            allPlayers,
+            draftPicks
+        };
+
+        renderStandings(standingsContainer, playoffContainer, globalLeagueData);
+    } catch (error) {
+        standingsContainer.innerHTML = '<p>Error loading standings. Please try again.</p>';
+        playoffContainer.innerHTML = '<p>Error loading playoff picture. Please try again.</p>';
+        logError('Standings Error', 'Failed to load standings data', { originalError: error.message });
+    }
+}
+
+function renderStandings(standingsContainer, playoffContainer, data) {
+    const { league, rosters, users } = data;
+    
+    if (!rosters || !users || rosters.length === 0) {
+        standingsContainer.innerHTML = '<p>No standings data available.</p>';
+        playoffContainer.innerHTML = '<p>No playoff data available.</p>';
+        return;
+    }
+
+    const usersMap = new Map(users.map(user => [user.user_id, user]));
+    
+    // Calculate standings data
+    const standingsData = rosters.map(roster => {
+        const user = usersMap.get(roster.owner_id);
+        const teamName = user?.metadata?.team_name || user?.display_name || 'Unnamed Team';
+        const avatarUrl = user?.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+        
+        const wins = roster.settings?.wins || 0;
+        const losses = roster.settings?.losses || 0;
+        const ties = roster.settings?.ties || 0;
+        const totalGames = wins + losses + ties;
+        const winPct = totalGames > 0 ? (wins + ties * 0.5) / totalGames : 0;
+        
+        const pointsFor = roster.settings?.fpts || 0;
+        const pointsAgainst = roster.settings?.fpts_against || 0;
+        const pointDiff = pointsFor - pointsAgainst;
+        
+        return {
+            rosterId: roster.roster_id,
+            userId: roster.owner_id,
+            teamName,
+            managerName: user?.display_name || 'Unknown',
+            avatarUrl,
+            wins,
+            losses,
+            ties,
+            winPct,
+            pointsFor,
+            pointsAgainst,
+            pointDiff,
+            totalGames
+        };
+    });
+
+    // Sort by win percentage, then by points for
+    standingsData.sort((a, b) => {
+        if (b.winPct !== a.winPct) {
+            return b.winPct - a.winPct;
+        }
+        return b.pointsFor - a.pointsFor;
+    });
+
+    // Determine playoff positions (assuming top 6 teams make playoffs, top 2 get byes)
+    const playoffSpots = Math.min(6, rosters.length);
+    const byeWeeks = Math.min(2, rosters.length);
+
+    // Render standings table
+    standingsContainer.innerHTML = `
+        <table class="standings-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Team</th>
+                    <th>Record</th>
+                    <th>Win %</th>
+                    <th>PF</th>
+                    <th>PA</th>
+                    <th>Diff</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${standingsData.map((team, index) => {
+                    const rank = index + 1;
+                    let statusBadge = '';
+                    
+                    if (rank <= byeWeeks) {
+                        statusBadge = '<span class="playoff-position">Bye Week</span>';
+                    } else if (rank <= playoffSpots) {
+                        statusBadge = '<span class="playoff-position">Playoffs</span>';
+                    } else {
+                        statusBadge = '<span class="eliminated">Eliminated</span>';
+                    }
+
+                    const diffClass = team.pointDiff > 0 ? 'positive' : team.pointDiff < 0 ? 'negative' : '';
+                    const record = team.ties > 0 ? `${team.wins}-${team.losses}-${team.ties}` : `${team.wins}-${team.losses}`;
+
+                    return `
+                        <tr>
+                            <td class="number-cell">${rank}</td>
+                            <td>
+                                <div class="team-info">
+                                    ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.managerName} Avatar" class="avatar">` : ''}
+                                    <div>
+                                        <div class="team-name">${team.teamName}</div>
+                                        <div class="manager-name">${team.managerName}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="number-cell">${record}</td>
+                            <td class="number-cell">${(team.winPct * 100).toFixed(1)}%</td>
+                            <td class="number-cell">${team.pointsFor.toFixed(1)}</td>
+                            <td class="number-cell">${team.pointsAgainst.toFixed(1)}</td>
+                            <td class="number-cell ${diffClass}">${team.pointDiff > 0 ? '+' : ''}${team.pointDiff.toFixed(1)}</td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+
+    // Render playoff picture
+    const playoffTeams = standingsData.slice(0, playoffSpots);
+    const byeTeams = playoffTeams.slice(0, byeWeeks);
+    const wildcardTeams = playoffTeams.slice(byeWeeks);
+
+    playoffContainer.innerHTML = `
+        <div class="playoff-bracket">
+            ${byeTeams.map((team, index) => `
+                <div class="playoff-spot bye-week">
+                    <h4>#${index + 1} Seed - First Round Bye</h4>
+                    <div class="playoff-team">
+                        ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.managerName} Avatar" class="avatar">` : ''}
+                        <div>
+                            <div class="team-name">${team.teamName}</div>
+                            <div class="manager-name">${team.wins}-${team.losses}${team.ties > 0 ? `-${team.ties}` : ''}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+            
+            ${wildcardTeams.map((team, index) => `
+                <div class="playoff-spot">
+                    <h4>#${index + byeWeeks + 1} Seed - Wild Card</h4>
+                    <div class="playoff-team">
+                        ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.managerName} Avatar" class="avatar">` : ''}
+                        <div>
+                            <div class="team-name">${team.teamName}</div>
+                            <div class="manager-name">${team.wins}-${team.losses}${team.ties > 0 ? `-${team.ties}` : ''}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: var(--card-bg); border-radius: 8px; border: 1px solid var(--card-border);">
+            <h4 style="margin-top: 0; color: var(--heading-color);">Playoff Format</h4>
+            <p style="margin-bottom: 5px;"><strong>Playoff Teams:</strong> Top ${playoffSpots} teams</p>
+            <p style="margin-bottom: 5px;"><strong>First Round Byes:</strong> Top ${byeWeeks} seeds</p>
+            <p style="margin-bottom: 0;"><strong>Tiebreakers:</strong> 1) Win % 2) Points For</p>
+        </div>
+    `;
 }
 
 // Global variables for team data
