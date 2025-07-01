@@ -1396,54 +1396,7 @@ body.dark-mode .disclaimer-content strong {
     background-color: var(--button-hover-bg);
 }
 
-.search-filters {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
 
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    min-width: 150px;
-}
-
-.filter-group label {
-    font-size: 0.9em;
-    color: var(--text-secondary);
-    font-weight: bold;
-}
-
-.filter-group select {
-    padding: 8px 12px;
-    border: 1px solid var(--card-border);
-    border-radius: 4px;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-size: 0.9em;
-}
-
-.search-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding: 10px 15px;
-    background-color: var(--section-bg);
-    border-radius: 6px;
-    border: 1px solid var(--section-border);
-}
-
-#search-results-count {
-    color: var(--text-secondary);
-    font-weight: bold;
-}
-
-#search-loading {
-    color: var(--button-active-bg);
-    font-style: italic;
-}
 
 .search-placeholder {
     text-align: center;
@@ -1599,55 +1552,92 @@ body.dark-mode .disclaimer-content strong {
     color: var(--text-primary);
 }
 
-/* Quick Access Buttons */
-.quick-access-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
+/* Page Description */
+.page-description {
+    color: var(--text-secondary);
+    margin-bottom: 30px;
+    font-size: 1.1em;
 }
 
-.quick-access-btn {
-    background-color: var(--bg-primary);
+/* Search Suggestions (Autocomplete) */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--card-border);
+    border-radius: 0 0 8px 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.search-input-group {
+    position: relative;
+}
+
+.suggestion-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--section-border);
+    transition: background-color 0.2s ease;
+}
+
+.suggestion-item:hover,
+.suggestion-item.highlighted {
+    background-color: var(--card-bg);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-name {
+    font-weight: bold;
     color: var(--text-primary);
-    border: 2px solid var(--card-border);
-    padding: 10px 16px;
+}
+
+.suggestion-details {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* Example Searches */
+.example-searches {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.example-searches p {
+    margin-bottom: 15px;
+    color: var(--text-secondary);
+}
+
+.example-name {
+    display: inline-block;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    margin: 4px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.9em;
-    transition: all 0.3s ease;
-    white-space: nowrap;
+    transition: all 0.2s ease;
+    border: 1px solid var(--card-border);
 }
 
-.quick-access-btn:hover,
-.quick-access-btn.active {
-    background-color: var(--button-active-bg);
+.example-name:hover {
+    background-color: var(--button-hover-bg);
     color: white;
-    border-color: var(--button-active-bg);
+    transform: translateY(-1px);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .search-filters {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .filter-group {
-        min-width: 100%;
-    }
-    
     .search-input-group {
         flex-direction: column;
-    }
-    
-    .quick-access-buttons {
-        justify-content: center;
-    }
-    
-    .quick-access-btn {
-        flex: 1;
-        min-width: 140px;
     }
     
     .player-card-header {
@@ -1663,6 +1653,16 @@ body.dark-mode .disclaimer-content strong {
     
     .player-card-stats {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .example-searches {
+        margin-top: 15px;
+    }
+
+    .example-name {
+        display: block;
+        margin: 8px auto;
+        max-width: 200px;
     }
 }
 

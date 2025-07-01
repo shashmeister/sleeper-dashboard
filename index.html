@@ -244,75 +244,32 @@
 
         <div id="player-search-page" class="page-content" style="display: none;">
             <section id="player-search-section">
-                <h2>Player Database & Search</h2>
+                <h2>Player Ownership Lookup</h2>
+                <p class="page-description">Quick tool to find out who owns any NFL player in your league</p>
                 
                 <div class="search-controls">
                     <div class="search-input-group">
-                        <input type="text" id="player-search-input" placeholder="Search players by name..." autocomplete="off">
+                        <input type="text" id="player-search-input" placeholder="Type a player name (e.g., Jamarr Chase, Josh Allen)..." autocomplete="off">
                         <button id="clear-search-btn">Clear</button>
                     </div>
-                    
-                    <div class="search-filters">
-                        <div class="filter-group">
-                            <label>Position:</label>
-                            <select id="position-filter">
-                                <option value="all">All Positions</option>
-                                <option value="QB">QB</option>
-                                <option value="RB">RB</option>
-                                <option value="WR">WR</option>
-                                <option value="TE">TE</option>
-                                <option value="K">K</option>
-                                <option value="DEF">DEF</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label>Availability:</label>
-                            <select id="availability-filter">
-                                <option value="all">All Players</option>
-                                <option value="owned">Owned</option>
-                                <option value="available">Available</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label>Team:</label>
-                            <select id="nfl-team-filter">
-                                <option value="all">All NFL Teams</option>
-                            </select>
-                        </div>
+                    <div id="search-suggestions" class="search-suggestions" style="display: none;">
+                        <!-- Autocomplete suggestions will appear here -->
                     </div>
-                </div>
-                
-                <div class="search-stats">
-                    <span id="search-results-count" style="display: none;">0 players found</span>
-                    <span id="search-loading" style="display: none;">Searching...</span>
                 </div>
                 
                 <div id="player-search-results">
                     <!-- Player results will be loaded here -->
                     <div class="search-placeholder">
-                        <h3>🔍 Search for any NFL player</h3>
-                        <p>Find out who owns any player in your league, or discover available talent on waivers.</p>
-                        <ul>
-                            <li>Search by player name</li>
-                            <li>Filter by position or NFL team</li>
-                            <li>See ownership status instantly</li>
-                            <li>Quick access to available players</li>
-                        </ul>
+                        <h3>🔍 Who owns that player?</h3>
+                        <p>Start typing any NFL player's name above to find out who owns them in your league.</p>
+                        <div class="example-searches">
+                            <p><strong>Try searching for:</strong></p>
+                            <span class="example-name">Jamarr Chase</span>
+                            <span class="example-name">Josh Allen</span>
+                            <span class="example-name">Christian McCaffrey</span>
+                            <span class="example-name">Tyreek Hill</span>
+                        </div>
                     </div>
-                </div>
-            </section>
-            
-            <section id="quick-access-section">
-                <h3>Quick Access</h3>
-                <div class="quick-access-buttons">
-                    <button class="quick-access-btn" data-filter="available,QB">Available QBs</button>
-                    <button class="quick-access-btn" data-filter="available,RB">Available RBs</button>
-                    <button class="quick-access-btn" data-filter="available,WR">Available WRs</button>
-                    <button class="quick-access-btn" data-filter="available,TE">Available TEs</button>
-                    <button class="quick-access-btn" data-filter="rookies">2024 Rookies</button>
-                    <button class="quick-access-btn" data-filter="free-agents">Free Agents</button>
                 </div>
             </section>
         </div>
