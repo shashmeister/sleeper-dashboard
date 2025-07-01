@@ -1624,8 +1624,8 @@ async function loadSchedule() {
         // Generate or fetch schedule
         const schedule = await generateSchedule(teams);
         
-        // Render in grid view by default
-        renderScheduleGrid(container, schedule, teams);
+        // Render in list view by default
+        renderScheduleList(container, schedule, teams);
         
         // Setup view toggle listeners
         setupScheduleViewToggle(schedule, teams);
@@ -1637,14 +1637,13 @@ async function loadSchedule() {
 }
 
 async function generateSchedule(teams) {
-    // Since Sleeper doesn't provide schedule until season starts,
-    // we'll create a placeholder structure that can be filled later
+    // Only use real data from Sleeper API - no fake placeholders
     const schedule = {};
     
     for (let week = 1; week <= TOTAL_WEEKS; week++) {
         schedule[week] = [];
         
-        // Try to fetch actual matchups if available
+        // Only fetch actual matchups if available
         try {
             const matchups = await fetchMatchups(week);
             if (matchups.length > 0) {
@@ -1662,30 +1661,11 @@ async function generateSchedule(teams) {
                         schedule[week].push(rosterIds);
                     }
                 });
-            } else {
-                // Placeholder matchups for future weeks
-                // Simple round-robin style pairing
-                const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
-                for (let i = 0; i < shuffledTeams.length; i += 2) {
-                    if (i + 1 < shuffledTeams.length) {
-                        schedule[week].push([
-                            shuffledTeams[i].rosterId,
-                            shuffledTeams[i + 1].rosterId
-                        ]);
-                    }
-                }
             }
+            // If no matchups available, leave week empty (no fake data)
         } catch (error) {
-            // Fallback to placeholder for this week
-            const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
-            for (let i = 0; i < shuffledTeams.length; i += 2) {
-                if (i + 1 < shuffledTeams.length) {
-                    schedule[week].push([
-                        shuffledTeams[i].rosterId,
-                        shuffledTeams[i + 1].rosterId
-                    ]);
-                }
-            }
+            // Leave week empty if API call fails
+            console.log(`No matchups available for week ${week}`);
         }
     }
     
@@ -1725,7 +1705,7 @@ function renderScheduleGrid(container, schedule, teams) {
 
         for (let week = 1; week <= TOTAL_WEEKS; week++) {
             const matchup = schedule[week]?.find(m => m.includes(team.rosterId));
-            let cellContent = 'BYE';
+            let cellContent = '-';
             let cellClass = 'schedule-cell bye';
 
             if (matchup) {
@@ -1770,7 +1750,7 @@ function renderScheduleList(container, schedule, teams) {
 
         const weekMatchups = schedule[week] || [];
         if (weekMatchups.length === 0) {
-            listHTML += '<p style="text-align: center; color: var(--text-secondary);">No matchups scheduled</p>';
+            listHTML += '<p style="text-align: center; color: var(--text-secondary);">Schedule not yet released</p>';
         } else {
             weekMatchups.forEach(matchup => {
                 if (matchup.length === 2) {
