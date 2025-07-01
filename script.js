@@ -696,11 +696,6 @@ function renderTeamsOverview(container, data) {
                     <p>${user.display_name}</p>
                 </div>
             </div>
-            <div class="team-stats">
-                <p><strong>Players:</strong> ${players.length}</p>
-                <p><strong>Record:</strong> ${roster.settings?.wins || 0}-${roster.settings?.losses || 0}${roster.settings?.ties ? `-${roster.settings.ties}` : ''}</p>
-                <p><strong>Points:</strong> ${roster.settings?.fpts || 0}</p>
-            </div>
         `;
 
         // Add click event to show team details
