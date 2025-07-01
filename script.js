@@ -1913,7 +1913,6 @@ async function displayDashboard() {
 
         // Load dashboard components
         await Promise.all([
-            loadDashboardMatchups(),
             loadDashboardStandings(),
             loadDashboardTransactions(),
             loadDashboardStats()
@@ -1925,49 +1924,7 @@ async function displayDashboard() {
     }
 }
 
-async function loadDashboardMatchups() {
-    const container = document.getElementById('dashboard-current-matchups');
-    if (!container) return;
 
-    try {
-        // Get current week
-        const nflState = await fetch(`${SLEEPER_API_BASE}/state/nfl`).then(r => r.json());
-        const currentWeek = Math.max(1, nflState.week || 1);
-        
-        const [matchupsData, users, rosters] = await Promise.all([
-            fetchMatchups(currentWeek),
-            fetchUsers(),
-            fetchRosters()
-        ]);
-
-        if (matchupsData.length === 0) {
-            container.innerHTML = '<p>No matchups available for this week yet.</p>';
-            return;
-        }
-
-        // Create user and roster maps
-        const usersMap = users.reduce((map, user) => {
-            map[user.user_id] = user;
-            return map;
-        }, {});
-
-        const rostersByUserId = {};
-        rosters.forEach(roster => {
-            const owner = users.find(user => user.user_id === roster.owner_id);
-            if (owner) {
-                rostersByUserId[owner.user_id] = roster;
-            }
-        });
-
-        // Show only first 3 matchups for dashboard
-        const limitedMatchups = matchupsData.slice(0, 6); // Top 3 matchups (6 teams)
-        renderWeekMatchups(container, limitedMatchups, usersMap, rostersByUserId, currentWeek);
-
-    } catch (error) {
-        container.innerHTML = '<p>Error loading current matchups.</p>';
-        console.error('Dashboard matchups error:', error);
-    }
-}
 
 async function loadDashboardStandings() {
     const container = document.getElementById('dashboard-standings');
