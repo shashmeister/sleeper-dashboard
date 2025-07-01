@@ -1551,7 +1551,7 @@ body.dark-mode .disclaimer-content strong {
 }
 
 .ownership-badge.owned {
-    background-color: var(--button-active-bg);
+    background-color: #dc3545;
     color: white;
 }
 
