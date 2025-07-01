@@ -361,9 +361,15 @@ async function displayLeagueInfo() {
 
     let draft = null;
     let draftPicks = [];
+    console.log('Draft History Debug - League:', league);
     if (league && league.draft_id) {
+        console.log('Draft History Debug - Draft ID found:', league.draft_id);
         draft = await fetchDraftDetails(league.draft_id);
         draftPicks = await fetchDraftPicks(league.draft_id);
+        console.log('Draft History Debug - Draft details:', draft);
+        console.log('Draft History Debug - Draft picks:', draftPicks);
+    } else {
+        console.log('Draft History Debug - No draft ID found in league data');
     }
 
     if (league && rosters.length > 0 && users.length > 0 && allPlayers) {
@@ -462,6 +468,13 @@ async function displayLeagueInfo() {
             const totalRounds = draft.settings.rounds || 0;
             const totalPicks = totalRounds * numTeams;
             const completedPicks = draftPicks.length;
+            console.log('Draft History Debug - Progress calculation:', {
+                totalRounds,
+                numTeams,
+                totalPicks,
+                completedPicks,
+                draftSettings: draft.settings
+            });
 
             if (totalPicks > 0) {
                 const progressPercentage = (completedPicks / totalPicks) * 100;
@@ -472,6 +485,7 @@ async function displayLeagueInfo() {
                 draftProgressText.textContent = '0% complete (0/0 picks)';
             }
         } else {
+            console.log('Draft History Debug - No draft or draft picks data');
             draftProgressFill.style.width = '0%';
             draftProgressText.textContent = '0% complete (0/0 picks)';
         }
