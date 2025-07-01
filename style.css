@@ -210,6 +210,16 @@ h2 {
     border: 1px solid var(--card-border);
 }
 
+.team-card.clickable {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.team-card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
 .team-card h3,
 .draft-round h3 {
     margin-top: 0;
@@ -400,6 +410,89 @@ h2 {
 
 .news-article small {
     color: var(--text-muted-color, #6c757d); /* Fallback color */
+}
+
+/* Team Detail Pages */
+#team-detail-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+#back-to-teams-btn {
+    background-color: var(--button-bg);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+}
+
+#back-to-teams-btn:hover {
+    background-color: var(--button-hover-bg);
+}
+
+.team-detail-card {
+    background-color: var(--card-bg);
+    padding: 25px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid var(--card-border);
+}
+
+.team-detail-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.team-detail-header .avatar {
+    width: 50px;
+    height: 50px;
+}
+
+.roster-section {
+    margin-bottom: 25px;
+}
+
+.roster-section h4 {
+    color: var(--heading-color);
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--section-border);
+    padding-bottom: 8px;
+}
+
+.position-group {
+    margin-bottom: 20px;
+}
+
+.position-group h5 {
+    color: var(--card-heading);
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.player-card {
+    background-color: var(--bg-secondary);
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--list-border);
+}
+
+.player-card .player-name {
+    font-weight: bold;
+    color: var(--heading-color);
+}
+
+.player-card .player-details {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    margin-top: 4px;
 }
 
 /* Responsive Design */

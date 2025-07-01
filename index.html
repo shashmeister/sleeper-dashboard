@@ -36,6 +36,7 @@
     </header>
     <nav class="site-nav">
         <button class="nav-tab active" data-tab="startup-draft-page">Startup Draft</button>
+        <button class="nav-tab" data-tab="teams-page">Teams</button>
         <button class="nav-tab" data-tab="nfl-news-page">NFL News</button>
     </nav>
     <main>
@@ -86,6 +87,27 @@
                     <!-- Draft order will be loaded here by JavaScript -->
                     <li>Loading draft order...</li>
                 </ol>
+            </section>
+        </div>
+
+        <div id="teams-page" class="page-content" style="display: none;">
+            <section id="teams-overview-section">
+                <h2>League Teams</h2>
+                <div id="teams-overview-container">
+                    <!-- Team overview cards will be loaded here by JavaScript -->
+                    <p>Loading teams...</p>
+                </div>
+            </section>
+            
+            <section id="individual-team-section" style="display: none;">
+                <div id="team-detail-header">
+                    <button id="back-to-teams-btn">← Back to Teams</button>
+                    <h2 id="team-detail-title">Team Details</h2>
+                </div>
+                <div id="team-detail-content">
+                    <!-- Individual team details will be loaded here by JavaScript -->
+                    <p>Loading team details...</p>
+                </div>
             </section>
         </div>
 

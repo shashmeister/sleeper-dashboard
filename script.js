@@ -570,8 +570,273 @@ function setupTabNavigation() {
 
             // Activate the clicked tab
             tab.classList.add('active');
+
+            // Load teams data if teams tab is clicked
+            if (targetPageId === 'teams-page') {
+                displayTeamsOverview();
+            }
         });
     });
+}
+
+function setupTeamNavigation() {
+    // Back to teams button
+    const backBtn = document.getElementById('back-to-teams-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            document.getElementById('teams-overview-section').style.display = 'block';
+            document.getElementById('individual-team-section').style.display = 'none';
+        });
+    }
+}
+
+// Global variables for team data
+let globalLeagueData = {};
+
+async function displayTeamsOverview() {
+    const container = document.getElementById('teams-overview-container');
+    
+    // Use cached data if available
+    if (globalLeagueData.rosters && globalLeagueData.users) {
+        renderTeamsOverview(container, globalLeagueData);
+        return;
+    }
+
+    // Fetch fresh data
+    container.innerHTML = '<p>Loading teams...</p>';
+    
+    try {
+        const league = await fetchLeagueDetails();
+        const rosters = await fetchRosters();
+        const users = await fetchUsers();
+        const allPlayers = await fetchAllPlayers();
+        let draftPicks = [];
+        
+        if (league && league.draft_id) {
+            draftPicks = await fetchDraftPicks(league.draft_id);
+        }
+
+        // Store in global cache
+        globalLeagueData = {
+            league,
+            rosters,
+            users,
+            allPlayers,
+            draftPicks
+        };
+
+        renderTeamsOverview(container, globalLeagueData);
+    } catch (error) {
+        container.innerHTML = '<p>Error loading teams. Please try again.</p>';
+        logError('Teams Overview Error', 'Failed to load teams data', { originalError: error.message });
+    }
+}
+
+function renderTeamsOverview(container, data) {
+    const { league, rosters, users, allPlayers, draftPicks } = data;
+    
+    if (!rosters || !users || rosters.length === 0) {
+        container.innerHTML = '<p>No teams data available.</p>';
+        return;
+    }
+
+    const usersMap = new Map(users.map(user => [user.user_id, user]));
+    
+    // Determine data source based on draft status
+    let teamPlayerData = new Map();
+    
+    if (league && league.draft_id && draftPicks.length > 0) {
+        // Use draft picks during/after draft
+        draftPicks.forEach(pick => {
+            const player = allPlayers[pick.player_id];
+            if (player) {
+                if (!teamPlayerData.has(pick.roster_id)) {
+                    teamPlayerData.set(pick.roster_id, []);
+                }
+                teamPlayerData.get(pick.roster_id).push({
+                    ...player,
+                    pick_no: pick.pick_no,
+                    round: Math.ceil(pick.pick_no / users.length)
+                });
+            }
+        });
+    } else {
+        // Use current rosters (post-draft with transactions)
+        rosters.forEach(roster => {
+            if (roster.players) {
+                const players = roster.players.map(playerId => ({
+                    ...allPlayers[playerId],
+                    player_id: playerId
+                })).filter(p => p.player_id); // Filter out null players
+                teamPlayerData.set(roster.roster_id, players);
+            }
+        });
+    }
+
+    // Render team cards
+    container.innerHTML = '';
+    rosters.forEach(roster => {
+        const user = usersMap.get(roster.owner_id);
+        if (!user) return;
+
+        const teamName = user.metadata?.team_name || user.display_name || 'Unnamed Team';
+        const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+        const players = teamPlayerData.get(roster.roster_id) || [];
+        
+        const teamCard = document.createElement('div');
+        teamCard.classList.add('team-card', 'clickable');
+        teamCard.setAttribute('data-roster-id', roster.roster_id);
+        teamCard.setAttribute('data-user-id', roster.owner_id);
+        
+        teamCard.innerHTML = `
+            <div class="team-detail-header">
+                ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
+                <div>
+                    <h3>${teamName}</h3>
+                    <p>${user.display_name}</p>
+                </div>
+            </div>
+            <div class="team-stats">
+                <p><strong>Players:</strong> ${players.length}</p>
+                <p><strong>Record:</strong> ${roster.settings?.wins || 0}-${roster.settings?.losses || 0}${roster.settings?.ties ? `-${roster.settings.ties}` : ''}</p>
+                <p><strong>Points:</strong> ${roster.settings?.fpts || 0}</p>
+            </div>
+        `;
+
+        // Add click event to show team details
+        teamCard.addEventListener('click', () => {
+            showTeamDetails(roster.roster_id, roster.owner_id);
+        });
+
+        container.appendChild(teamCard);
+    });
+}
+
+async function showTeamDetails(rosterId, userId) {
+    const overviewSection = document.getElementById('teams-overview-section');
+    const detailSection = document.getElementById('individual-team-section');
+    const detailContent = document.getElementById('team-detail-content');
+    const detailTitle = document.getElementById('team-detail-title');
+
+    // Hide overview, show detail
+    overviewSection.style.display = 'none';
+    detailSection.style.display = 'block';
+    
+    // Show loading
+    detailContent.innerHTML = '<p>Loading team details...</p>';
+
+    try {
+        const data = globalLeagueData;
+        const { league, rosters, users, allPlayers, draftPicks } = data;
+        
+        const roster = rosters.find(r => r.roster_id === rosterId);
+        const user = users.find(u => u.user_id === userId);
+        
+        if (!roster || !user) {
+            detailContent.innerHTML = '<p>Team not found.</p>';
+            return;
+        }
+
+        const teamName = user.metadata?.team_name || user.display_name || 'Unnamed Team';
+        const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+        
+        // Update title
+        detailTitle.textContent = teamName;
+
+        // Get team players
+        let teamPlayers = [];
+        
+        if (league && league.draft_id && draftPicks.length > 0) {
+            // Use draft picks
+            const teamDraftPicks = draftPicks.filter(pick => pick.roster_id === rosterId);
+            teamPlayers = teamDraftPicks.map(pick => ({
+                ...allPlayers[pick.player_id],
+                pick_no: pick.pick_no,
+                round: Math.ceil(pick.pick_no / users.length),
+                source: 'draft'
+            })).filter(p => p.player_id);
+        } else if (roster.players) {
+            // Use current roster
+            teamPlayers = roster.players.map(playerId => ({
+                ...allPlayers[playerId],
+                player_id: playerId,
+                source: 'current'
+            })).filter(p => p.player_id);
+        }
+
+        renderTeamDetails(detailContent, {
+            user,
+            roster,
+            teamName,
+            avatarUrl,
+            teamPlayers,
+            isDrafting: league?.status === 'drafting'
+        });
+
+    } catch (error) {
+        detailContent.innerHTML = '<p>Error loading team details.</p>';
+        logError('Team Detail Error', 'Failed to load team details', { rosterId, userId, originalError: error.message });
+    }
+}
+
+function renderTeamDetails(container, { user, roster, teamName, avatarUrl, teamPlayers, isDrafting }) {
+    // Group players by position
+    const positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+    const playersByPosition = {};
+    
+    positions.forEach(pos => {
+        playersByPosition[pos] = teamPlayers.filter(p => p.position === pos);
+    });
+    
+    // Add any players not in standard positions
+    const otherPlayers = teamPlayers.filter(p => !positions.includes(p.position));
+    if (otherPlayers.length > 0) {
+        playersByPosition['OTHER'] = otherPlayers;
+    }
+
+    container.innerHTML = `
+        <div class="team-detail-card">
+            <div class="team-detail-header">
+                ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
+                <div>
+                    <h3>${teamName}</h3>
+                    <p><strong>Manager:</strong> ${user.display_name}</p>
+                    <p><strong>Record:</strong> ${roster.settings?.wins || 0}-${roster.settings?.losses || 0}${roster.settings?.ties ? `-${roster.settings.ties}` : ''}</p>
+                    <p><strong>Points:</strong> ${roster.settings?.fpts || 0}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="team-detail-card">
+            <div class="roster-section">
+                <h4>${isDrafting ? 'Drafted Players' : 'Current Roster'} (${teamPlayers.length} players)</h4>
+                ${Object.keys(playersByPosition).map(position => {
+                    const posPlayers = playersByPosition[position];
+                    if (posPlayers.length === 0) return '';
+                    
+                    return `
+                        <div class="position-group">
+                            <h5>${position} (${posPlayers.length})</h5>
+                            ${posPlayers.map(player => `
+                                <div class="player-card">
+                                    <div class="player-name">
+                                        <a href="https://www.nfl.com/players/${player.full_name ? player.full_name.toLowerCase().replace(/\s/g, '-') : ''}" target="_blank" rel="noopener noreferrer">
+                                            ${player.full_name || 'Unknown Player'}
+                                        </a>
+                                    </div>
+                                    <div class="player-details">
+                                        ${player.team || 'FA'} • ${player.position || 'N/A'}
+                                        ${player.bye_week ? ` • Bye: ${player.bye_week}` : ''}
+                                        ${player.pick_no ? ` • Pick ${player.pick_no} (Round ${player.round})` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
 }
 
 // Run the function when the page loads
@@ -579,6 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
     displayLeagueInfo();
     setupDarkModeToggle();
     setupTabNavigation();
+    setupTeamNavigation();
 });
 
 // --- Error Logging Functions ---
