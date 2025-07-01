@@ -156,21 +156,20 @@ function displayNews(articles) {
 async function fetchLeagueDetails() {
     try {
         const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch league details: ${response.status}`);
+        }
         const league = await response.json();
         
-        // Update league name and avatar
+        // Update league name and avatar in the header
         document.getElementById('league-name').textContent = league.name;
         const leagueAvatar = document.getElementById('league-avatar');
         if (league.avatar) {
             leagueAvatar.src = `${SLEEPER_AVATAR_BASE}/${league.avatar}`;
-            leagueAvatar.style.display = 'inline-block'; // Ensure it's visible
+            leagueAvatar.style.display = 'inline-block';
         } else {
-            leagueAvatar.style.display = 'none'; // Hide if no avatar
+            leagueAvatar.style.display = 'none';
         }
-        
-        // Display additional league details
-        document.getElementById('league-season').textContent = league.season;
-        document.getElementById('league-num-teams').textContent = league.settings.num_teams;
 
         return league;
     } catch (error) {
@@ -343,8 +342,8 @@ async function displayLeagueInfo() {
     const league = await fetchLeagueDetails();
     const rosters = await fetchRosters();
     const users = await fetchUsers();
-    const allPlayers = await fetchAllPlayers(); // Fetch all players here
-    const newsArticles = await fetchNews(); // Fetch news here
+    const allPlayers = await fetchAllPlayers();
+    const newsArticles = await fetchNews();
 
     if (newsArticles) {
         displayNews(newsArticles);
@@ -370,7 +369,7 @@ async function displayLeagueInfo() {
         // Create a map to easily look up rosters by user_id
         const rostersByUserIdMap = new Map(rosters.map(roster => [roster.owner_id, roster]));
 
-        const numTeams = league.settings.num_teams; // Declare numTeams once here
+        const numTeams = users.length;
 
         // Process draft picks to get drafted players for each team
         const teamDraftedPlayers = new Map(); // Map: roster_id -> [pick objects]
@@ -407,7 +406,7 @@ async function displayLeagueInfo() {
             viewByTeamBtn.classList.remove('active');
             viewByRoundBtn.classList.add('active');
             // Render by round
-            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, league, rosters);
+            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, { settings: { num_teams } }, rosters);
         });
 
         // Display Draft Details
@@ -449,7 +448,7 @@ async function displayLeagueInfo() {
         const draftProgressFill = document.getElementById('draft-progress-fill');
         const draftProgressText = document.getElementById('draft-progress-text');
 
-        if (draft && draftPicks && league) {
+        if (draft && draftPicks) {
             const totalRounds = draft.settings.rounds || 0;
             const totalPicks = totalRounds * numTeams;
             const completedPicks = draftPicks.length;
