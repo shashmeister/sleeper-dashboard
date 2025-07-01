@@ -760,14 +760,45 @@ async function showTeamDetails(rosterId, userId) {
     detailContent.innerHTML = '<p>Loading team details...</p>';
 
     try {
-        const data = globalLeagueData;
+        // Ensure data is loaded before proceeding
+        let data = globalLeagueData || {};
+        
+        // If data isn't loaded yet, fetch it
+        if (!data.rosters || !data.users || !data.allPlayers) {
+            const league = await fetchLeagueDetails();
+            const rosters = await fetchRosters();
+            const users = await fetchUsers();
+            const allPlayers = await fetchAllPlayers();
+            let draftPicks = [];
+            
+            if (league && league.draft_id) {
+                draftPicks = await fetchDraftPicks(league.draft_id);
+            }
+
+            // Store in global cache
+            globalLeagueData = {
+                league,
+                rosters,
+                users,
+                allPlayers,
+                draftPicks
+            };
+            
+            data = globalLeagueData;
+        }
+        
         const { league, rosters, users, allPlayers, draftPicks } = data;
         
-        const roster = rosters.find(r => r.roster_id === rosterId);
+        // Ensure rosterId is a number for comparison
+        const rosterIdNum = parseInt(rosterId);
+        
+        const roster = rosters.find(r => r.roster_id === rosterIdNum);
         const user = users.find(u => u.user_id === userId);
         
         if (!roster || !user) {
-            detailContent.innerHTML = '<p>Team not found.</p>';
+            detailContent.innerHTML = `<p>Team not found.</p>
+                <p><small>Debug: Looking for roster ID ${rosterIdNum} and user ID ${userId}</small></p>
+                <p><small>Available rosters: ${rosters.map(r => r.roster_id).join(', ')}</small></p>`;
             return;
         }
 
@@ -781,8 +812,8 @@ async function showTeamDetails(rosterId, userId) {
         let teamPlayers = [];
         
         if (league && league.draft_id && draftPicks.length > 0) {
-            // Use draft picks
-            const teamDraftPicks = draftPicks.filter(pick => pick.roster_id === rosterId);
+            // Use draft picks (make sure to use the numeric roster ID)
+            const teamDraftPicks = draftPicks.filter(pick => pick.roster_id === rosterIdNum);
             teamPlayers = teamDraftPicks.map(pick => ({
                 ...allPlayers[pick.player_id],
                 pick_no: pick.pick_no,
