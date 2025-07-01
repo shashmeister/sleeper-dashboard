@@ -542,6 +542,147 @@ h2 {
     height: 25px;
 }
 
+/* Mobile Standings Cards - Hidden by default, shown on mobile */
+.standings-mobile {
+    display: none;
+}
+
+.standings-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: box-shadow 0.3s ease;
+}
+
+.standings-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.standings-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.standings-card-team {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.standings-card-team .avatar {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.standings-card-team-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.standings-card-team-name {
+    font-weight: bold;
+    color: var(--heading-color);
+    font-size: 1.1em;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.standings-card-manager {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.standings-card-rank {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--button-active-bg);
+    flex-shrink: 0;
+    min-width: 40px;
+    text-align: center;
+}
+
+.standings-card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.standings-card-stat {
+    text-align: center;
+}
+
+.standings-card-stat-label {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.standings-card-stat-value {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.standings-card-stat-value.positive {
+    color: var(--button-active-bg);
+}
+
+.standings-card-stat-value.negative {
+    color: #dc3545;
+}
+
+.standings-card-record {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid var(--section-border);
+}
+
+.standings-card-record-text {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.standings-card-status {
+    display: flex;
+    gap: 5px;
+}
+
+.standings-card-status .playoff-position,
+.standings-card-status .eliminated {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.standings-card-status .playoff-position {
+    background-color: var(--button-active-bg);
+    color: white;
+}
+
+.standings-card-status .eliminated {
+    background-color: #dc3545;
+    color: white;
+}
+
 /* Team Detail Pages */
 #team-detail-header {
     display: flex;
@@ -664,25 +805,13 @@ h2 {
         grid-template-columns: 1fr;
     }
 
-    /* Responsive Standings Table */
+    /* Hide table on mobile, show cards instead */
     .standings-table {
-        font-size: 0.85em;
+        display: none;
     }
-
-    .standings-table th,
-    .standings-table td {
-        padding: 8px 6px;
-    }
-
-    .standings-table .team-info {
-        flex-direction: column;
-        gap: 4px;
-        text-align: center;
-    }
-
-    .standings-table .team-info .avatar {
-        width: 25px;
-        height: 25px;
+    
+    .standings-mobile {
+        display: block;
     }
 
     .playoff-bracket {

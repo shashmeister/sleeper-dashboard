@@ -733,8 +733,9 @@ function renderStandings(standingsContainer, playoffContainer, data) {
     const playoffSpots = Math.min(6, rosters.length);
     const byeWeeks = Math.min(2, rosters.length);
 
-    // Render standings table
+    // Render both desktop table and mobile cards
     standingsContainer.innerHTML = `
+        <!-- Desktop Table View -->
         <table class="standings-table">
             <thead>
                 <tr>
@@ -787,6 +788,66 @@ function renderStandings(standingsContainer, playoffContainer, data) {
                 }).join('')}
             </tbody>
         </table>
+
+        <!-- Mobile Card View -->
+        <div class="standings-mobile">
+            ${standingsData.map((team, index) => {
+                const rank = index + 1;
+                let statusBadge = '';
+                
+                if (rank <= byeWeeks) {
+                    statusBadge = '<span class="playoff-position">Bye Week</span>';
+                } else if (rank <= playoffSpots) {
+                    statusBadge = '<span class="playoff-position">Playoffs</span>';
+                } else {
+                    statusBadge = '<span class="eliminated">Eliminated</span>';
+                }
+
+                const diffClass = team.pointDiff > 0 ? 'positive' : team.pointDiff < 0 ? 'negative' : '';
+                const record = team.ties > 0 ? `${team.wins}-${team.losses}-${team.ties}` : `${team.wins}-${team.losses}`;
+
+                return `
+                    <div class="standings-card">
+                        <div class="standings-card-header">
+                            <div class="standings-card-team">
+                                ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.managerName} Avatar" class="avatar">` : ''}
+                                <div class="standings-card-team-info">
+                                    <div class="standings-card-team-name">${team.teamName}</div>
+                                    <div class="standings-card-manager">${team.managerName}</div>
+                                </div>
+                            </div>
+                            <div class="standings-card-rank">${rank}</div>
+                        </div>
+                        
+                        <div class="standings-card-stats">
+                            <div class="standings-card-stat">
+                                <div class="standings-card-stat-label">Win %</div>
+                                <div class="standings-card-stat-value">${(team.winPct * 100).toFixed(1)}%</div>
+                            </div>
+                            <div class="standings-card-stat">
+                                <div class="standings-card-stat-label">Points For</div>
+                                <div class="standings-card-stat-value">${team.pointsFor.toFixed(1)}</div>
+                            </div>
+                            <div class="standings-card-stat">
+                                <div class="standings-card-stat-label">Points Against</div>
+                                <div class="standings-card-stat-value">${team.pointsAgainst.toFixed(1)}</div>
+                            </div>
+                            <div class="standings-card-stat">
+                                <div class="standings-card-stat-label">Difference</div>
+                                <div class="standings-card-stat-value ${diffClass}">
+                                    ${team.pointDiff > 0 ? '+' : ''}${team.pointDiff.toFixed(1)}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="standings-card-record">
+                            <div class="standings-card-record-text">${record}</div>
+                            <div class="standings-card-status">${statusBadge}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
     `;
 
     // Render playoff picture
