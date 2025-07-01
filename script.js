@@ -546,10 +546,40 @@ function setupDarkModeToggle() {
     });
 }
 
+function setupTabNavigation() {
+    const tabs = document.querySelectorAll('.nav-tab');
+    const pages = document.querySelectorAll('.page-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Hide all pages
+            pages.forEach(page => {
+                page.style.display = 'none';
+            });
+
+            // Deactivate all tabs
+            tabs.forEach(t => {
+                t.classList.remove('active');
+            });
+
+            // Show the target page
+            const targetPageId = tab.getAttribute('data-tab');
+            const targetPage = document.getElementById(targetPageId);
+            if (targetPage) {
+                targetPage.style.display = 'block';
+            }
+
+            // Activate the clicked tab
+            tab.classList.add('active');
+        });
+    });
+}
+
 // Run the function when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     displayLeagueInfo();
-    setupDarkModeToggle(); // Call the dark mode setup function
+    setupDarkModeToggle();
+    setupTabNavigation();
 });
 
 // --- Error Logging Functions ---

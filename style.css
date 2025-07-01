@@ -95,6 +95,36 @@ header #dark-mode-toggle:hover {
     color: var(--header-bg);
 }
 
+/* Tab Navigation */
+.site-nav {
+    background-color: var(--bg-secondary);
+    padding: 0 30px;
+    border-bottom: 1px solid var(--section-border);
+    text-align: center;
+}
+
+.nav-tab {
+    padding: 15px 20px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: color 0.3s ease, border-bottom 0.3s ease;
+    border-bottom: 3px solid transparent;
+    margin: 0 10px;
+}
+
+.nav-tab:hover {
+    color: var(--heading-color);
+}
+
+.nav-tab.active {
+    color: var(--heading-color);
+    border-bottom: 3px solid var(--heading-color);
+    font-weight: bold;
+}
+
 .league-avatar {
     width: 50px; /* Adjust size as needed */
     height: 50px; /* Adjust size as needed */

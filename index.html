@@ -34,68 +34,79 @@
         </h1>
         <button id="dark-mode-toggle">Toggle Dark Mode</button>
     </header>
+    <nav class="site-nav">
+        <button class="nav-tab active" data-tab="startup-draft-page">Startup Draft</button>
+        <button class="nav-tab" data-tab="nfl-news-page">NFL News</button>
+        <button class="nav-tab" data-tab="league-details-page">League Details</button>
+    </nav>
     <main>
-        <section id="draft-progress-section">
-            <h2>Draft Progress</h2>
-            <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="draft-progress-fill"></div>
+        <div id="startup-draft-page" class="page-content">
+            <section id="draft-progress-section">
+                <h2>Draft Progress</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="draft-progress-fill"></div>
+                </div>
+                <p id="draft-progress-text">0% complete (0/0 picks)</p>
+            </section>
+
+            <section id="recent-picks-section">
+                <h2>Recent Picks</h2>
+                <ul id="recent-picks-list">
+                    <!-- Recent picks will be loaded here by JavaScript -->
+                    <li>Loading recent picks...</li>
+                </ul>
+            </section>
+
+            <div class="draft-display-controls">
+                <button id="view-by-team-btn">View by Team</button>
+                <button id="view-by-round-btn">View by Round</button>
             </div>
-            <p id="draft-progress-text">0% complete (0/0 picks)</p>
-        </section>
 
-        <section id="recent-picks-section">
-            <h2>Recent Picks</h2>
-            <ul id="recent-picks-list">
-                <!-- Recent picks will be loaded here by JavaScript -->
-                <li>Loading recent picks...</li>
-            </ul>
-        </section>
+            <section id="drafted-by-team-section">
+                <h2>Drafted Players (By Team)</h2>
+                <div id="teams-container">
+                    <!-- Teams will be loaded here by JavaScript -->
+                    <p>Loading teams...</p>
+                </div>
+            </section>
 
-        <section id="news-section">
-            <h2>Latest News (NFL)</h2>
-            <div id="news-container">
-                <!-- News articles will be loaded here by JavaScript -->
-                <p>Loading news...</p>
-            </div>
-        </section>
+            <section id="drafted-by-round-section" style="display:none;">
+                <h2>Drafted Players (By Round)</h2>
+                <div id="players-by-round-container">
+                    <!-- Players by round will be loaded here by JavaScript -->
+                    <p>Loading players by round...</p>
+                </div>
+            </section>
 
-        <div class="draft-display-controls">
-            <button id="view-by-team-btn">View by Team</button>
-            <button id="view-by-round-btn">View by Round</button>
+            <section id="draft-info-section">
+                <h2>Draft Details</h2>
+                <p>Draft Status: <span id="draft-status">Loading...</span></p>
+                <p>Draft Type: <span id="draft-type">Loading...</span></p>
+                <p>Draft Order:</p>
+                <ol id="draft-order-list">
+                    <!-- Draft order will be loaded here by JavaScript -->
+                    <li>Loading draft order...</li>
+                </ol>
+            </section>
         </div>
 
-        <section id="drafted-by-team-section">
-            <h2>Drafted Players (By Team)</h2>
-            <div id="teams-container">
-                <!-- Teams will be loaded here by JavaScript -->
-                <p>Loading teams...</p>
-            </div>
-        </section>
+        <div id="nfl-news-page" class="page-content" style="display: none;">
+            <section id="news-section">
+                <h2>Latest News (NFL)</h2>
+                <div id="news-container">
+                    <!-- News articles will be loaded here by JavaScript -->
+                    <p>Loading news...</p>
+                </div>
+            </section>
+        </div>
 
-        <section id="drafted-by-round-section" style="display:none;">
-            <h2>Drafted Players (By Round)</h2>
-            <div id="players-by-round-container">
-                <!-- Players by round will be loaded here by JavaScript -->
-                <p>Loading players by round...</p>
-            </div>
-        </section>
-
-        <section id="league-info-section">
-            <h2>League Details</h2>
-            <p>Season: <span id="league-season">Loading...</span></p>
-            <p>Number of Teams: <span id="league-num-teams">Loading...</span></p>
-        </section>
-
-        <section id="draft-info-section">
-            <h2>Draft Details</h2>
-            <p>Draft Status: <span id="draft-status">Loading...</span></p>
-            <p>Draft Type: <span id="draft-type">Loading...</span></p>
-            <p>Draft Order:</p>
-            <ol id="draft-order-list">
-                <!-- Draft order will be loaded here by JavaScript -->
-                <li>Loading draft order...</li>
-            </ol>
-        </section>
+        <div id="league-details-page" class="page-content" style="display: none;">
+            <section id="league-info-section">
+                <h2>League Details</h2>
+                <p>Season: <span id="league-season">Loading...</span></p>
+                <p>Number of Teams: <span id="league-num-teams">Loading...</span></p>
+            </section>
+        </div>
     </main>
 
     <section id="error-log-section" style="display:none;">
