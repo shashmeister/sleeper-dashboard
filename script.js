@@ -586,6 +586,8 @@ function setupTabNavigation() {
                 displayTeamsOverview();
             } else if (targetPageId === 'standings-page') {
                 displayStandings();
+            } else if (targetPageId === 'transactions-page') {
+                displayTransactions();
             }
         });
     });
@@ -1101,6 +1103,328 @@ function renderTeamDetails(container, { user, roster, teamName, avatarUrl, teamP
             </div>
         </div>
     `;
+}
+
+// --- Transactions Functions ---
+
+async function fetchTransactions(week = 1) {
+    try {
+        const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}/transactions/${week}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch transactions for week ${week}: ${response.status}`);
+        }
+        const transactions = await response.json();
+        return transactions || [];
+    } catch (error) {
+        logError('API Error', `Error fetching transactions for week ${week}`, { originalError: error.message });
+        return [];
+    }
+}
+
+async function fetchAllRecentTransactions() {
+    try {
+        // Fetch transactions from multiple weeks (weeks 0-10 to cover startup and early season)
+        const weeks = Array.from({ length: 11 }, (_, i) => i);
+        const transactionPromises = weeks.map(week => fetchTransactions(week));
+        const allTransactionsByWeek = await Promise.all(transactionPromises);
+        
+        // Flatten and combine all transactions
+        const allTransactions = allTransactionsByWeek.flat();
+        
+        // Sort by created time (most recent first)
+        return allTransactions.sort((a, b) => b.created - a.created);
+    } catch (error) {
+        logError('Transaction Error', 'Error fetching recent transactions', { originalError: error.message });
+        return [];
+    }
+}
+
+async function displayTransactions() {
+    const container = document.getElementById('transactions-container');
+    if (!container) return;
+
+    try {
+        container.innerHTML = '<p>Loading transactions...</p>';
+        
+        // Get fresh data
+        const [transactions, users, rosters, allPlayers] = await Promise.all([
+            fetchAllRecentTransactions(),
+            fetchUsers(),
+            fetchRosters(),
+            fetchAllPlayers()
+        ]);
+
+        if (transactions.length === 0) {
+            container.innerHTML = '<p>No transactions found.</p>';
+            return;
+        }
+
+        // Create user and roster maps
+        const usersMap = users.reduce((map, user) => {
+            map[user.user_id] = user;
+            return map;
+        }, {});
+
+        const rostersByUserId = {};
+        rosters.forEach(roster => {
+            const owner = users.find(user => user.user_id === roster.owner_id);
+            if (owner) {
+                rostersByUserId[owner.user_id] = roster;
+            }
+        });
+
+        // Populate week filter
+        setupTransactionFilters(transactions);
+
+        // Display transactions
+        renderTransactions(container, transactions, usersMap, rostersByUserId, allPlayers);
+
+        // Setup filter event listeners
+        setupTransactionFilterListeners(transactions, usersMap, rostersByUserId, allPlayers);
+
+    } catch (error) {
+        container.innerHTML = '<p>Error loading transactions.</p>';
+        logError('Transaction Display Error', 'Failed to display transactions', { originalError: error.message });
+    }
+}
+
+function setupTransactionFilters(transactions) {
+    // Setup week filter
+    const weekFilter = document.getElementById('week-filter');
+    if (!weekFilter) return;
+
+    // Get unique weeks from transactions
+    const weeks = [...new Set(transactions.map(t => {
+        const date = new Date(t.created);
+        const week = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+        return week;
+    }))].sort((a, b) => b - a);
+
+    // Clear existing options except "All Weeks"
+    weekFilter.innerHTML = '<option value="all">All Weeks</option>';
+    
+    weeks.forEach(week => {
+        const option = document.createElement('option');
+        option.value = week;
+        option.textContent = `Week ${week}`;
+        weekFilter.appendChild(option);
+    });
+}
+
+function setupTransactionFilterListeners(transactions, usersMap, rostersByUserId, allPlayers) {
+    const filters = ['filter-trades', 'filter-waivers', 'filter-free-agents', 'filter-drops'];
+    const weekFilter = document.getElementById('week-filter');
+    const container = document.getElementById('transactions-container');
+
+    function applyFilters() {
+        const activeTypes = [];
+        
+        if (document.getElementById('filter-trades')?.checked) activeTypes.push('trade');
+        if (document.getElementById('filter-waivers')?.checked) activeTypes.push('waiver');
+        if (document.getElementById('filter-free-agents')?.checked) activeTypes.push('free_agent');
+        if (document.getElementById('filter-drops')?.checked) activeTypes.push('drop');
+
+        const selectedWeek = weekFilter?.value;
+
+        let filteredTransactions = transactions.filter(t => activeTypes.includes(t.type));
+
+        if (selectedWeek && selectedWeek !== 'all') {
+            const weekNum = parseInt(selectedWeek);
+            filteredTransactions = filteredTransactions.filter(t => {
+                const date = new Date(t.created);
+                const transactionWeek = Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+                return transactionWeek === weekNum;
+            });
+        }
+
+        renderTransactions(container, filteredTransactions, usersMap, rostersByUserId, allPlayers);
+    }
+
+    // Add event listeners
+    filters.forEach(filterId => {
+        const checkbox = document.getElementById(filterId);
+        if (checkbox) {
+            checkbox.addEventListener('change', applyFilters);
+        }
+    });
+
+    if (weekFilter) {
+        weekFilter.addEventListener('change', applyFilters);
+    }
+}
+
+function renderTransactions(container, transactions, usersMap, rostersByUserId, allPlayers) {
+    if (transactions.length === 0) {
+        container.innerHTML = '<p>No transactions match the selected filters.</p>';
+        return;
+    }
+
+    container.innerHTML = transactions.map(transaction => {
+        const date = new Date(transaction.created);
+        const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        
+        return `
+            <div class="transaction-card">
+                <div class="transaction-header">
+                    <span class="transaction-type ${transaction.type}">${transaction.type}</span>
+                    <span class="transaction-date">${formattedDate}</span>
+                </div>
+                <div class="transaction-details">
+                    ${renderTransactionContent(transaction, usersMap, rostersByUserId, allPlayers)}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderTransactionContent(transaction, usersMap, rostersByUserId, allPlayers) {
+    if (transaction.type === 'trade') {
+        return renderTrade(transaction, usersMap, rostersByUserId, allPlayers);
+    } else if (transaction.type === 'waiver' || transaction.type === 'free_agent') {
+        return renderWaiverOrFreeAgent(transaction, usersMap, rostersByUserId, allPlayers);
+    } else if (transaction.type === 'drop') {
+        return renderDrop(transaction, usersMap, rostersByUserId, allPlayers);
+    }
+    return '<p>Unknown transaction type</p>';
+}
+
+function renderTrade(transaction, usersMap, rostersByUserId, allPlayers) {
+    const rosterIds = transaction.roster_ids || [];
+    
+    if (rosterIds.length < 2) {
+        return '<p>Invalid trade data</p>';
+    }
+
+    const teams = rosterIds.map(rosterId => {
+        const roster = Object.values(rostersByUserId).find(r => r.roster_id === rosterId);
+        const user = roster ? usersMap[roster.owner_id] : null;
+        
+        const teamName = user?.metadata?.team_name || user?.display_name || 'Unknown Team';
+        const avatarUrl = user?.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+
+        // Get what this team received
+        const received = [];
+        
+        // Check for players
+        if (transaction.adds) {
+            Object.keys(transaction.adds).forEach(playerId => {
+                if (transaction.adds[playerId] === rosterId) {
+                    const player = allPlayers[playerId];
+                    if (player) {
+                        received.push({
+                            type: 'player',
+                            name: player.full_name || 'Unknown Player',
+                            details: `${player.position || 'N/A'} - ${player.team || 'FA'}`
+                        });
+                    }
+                }
+            });
+        }
+
+        // Check for draft picks
+        if (transaction.draft_picks) {
+            transaction.draft_picks.forEach(pick => {
+                if (pick.owner_id === rosterId) {
+                    received.push({
+                        type: 'pick',
+                        name: `${pick.season} Round ${pick.round} Pick`,
+                        details: pick.previous_owner_id !== rosterId ? 'Acquired' : 'Original'
+                    });
+                }
+            });
+        }
+
+        return { teamName, avatarUrl, received, rosterId };
+    });
+
+    return `
+        ${teams.map((team, index) => `
+            <div class="transaction-team">
+                <h4>
+                    ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.teamName} Avatar" class="avatar">` : ''}
+                    ${team.teamName} Receives:
+                </h4>
+                <ul class="transaction-players">
+                    ${team.received.length > 0 ? team.received.map(item => `
+                        <li class="${item.type === 'player' ? 'added' : 'draft-pick-item'}">
+                            <div class="${item.type === 'player' ? 'player-name' : 'pick-details'}">${item.name}</div>
+                            <div class="${item.type === 'player' ? 'player-details' : 'pick-info'}">${item.details}</div>
+                        </li>
+                    `).join('') : '<li>Nothing received</li>'}
+                </ul>
+            </div>
+            ${index < teams.length - 1 ? '<div class="trade-arrow">↔</div>' : ''}
+        `).join('')}
+    `;
+}
+
+function renderWaiverOrFreeAgent(transaction, usersMap, rostersByUserId, allPlayers) {
+    const rosterId = transaction.roster_ids?.[0];
+    const roster = Object.values(rostersByUserId).find(r => r.roster_id === rosterId);
+    const user = roster ? usersMap[roster.owner_id] : null;
+    
+    const teamName = user?.metadata?.team_name || user?.display_name || 'Unknown Team';
+    const avatarUrl = user?.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+
+    const adds = [];
+    const drops = [];
+
+    if (transaction.adds) {
+        Object.keys(transaction.adds).forEach(playerId => {
+            const player = allPlayers[playerId];
+            if (player) {
+                adds.push({
+                    name: player.full_name || 'Unknown Player',
+                    details: `${player.position || 'N/A'} - ${player.team || 'FA'}`
+                });
+            }
+        });
+    }
+
+    if (transaction.drops) {
+        Object.keys(transaction.drops).forEach(playerId => {
+            const player = allPlayers[playerId];
+            if (player) {
+                drops.push({
+                    name: player.full_name || 'Unknown Player',
+                    details: `${player.position || 'N/A'} - ${player.team || 'FA'}`
+                });
+            }
+        });
+    }
+
+    return `
+        <div class="transaction-team">
+            <h4>
+                ${avatarUrl ? `<img src="${avatarUrl}" alt="${teamName} Avatar" class="avatar">` : ''}
+                ${teamName}
+            </h4>
+            ${adds.length > 0 ? `
+                <ul class="transaction-players">
+                    ${adds.map(player => `
+                        <li class="added">
+                            <div class="player-name">+ ${player.name}</div>
+                            <div class="player-details">${player.details}</div>
+                        </li>
+                    `).join('')}
+                </ul>
+            ` : ''}
+            ${drops.length > 0 ? `
+                <ul class="transaction-players">
+                    ${drops.map(player => `
+                        <li class="dropped">
+                            <div class="player-name">- ${player.name}</div>
+                            <div class="player-details">${player.details}</div>
+                        </li>
+                    `).join('')}
+                </ul>
+            ` : ''}
+        </div>
+    `;
+}
+
+function renderDrop(transaction, usersMap, rostersByUserId, allPlayers) {
+    return renderWaiverOrFreeAgent(transaction, usersMap, rostersByUserId, allPlayers);
 }
 
 // Run the function when the page loads

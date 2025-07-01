@@ -690,5 +690,192 @@ h2 {
     }
 }
 
+/* Transactions Page */
+.transactions-filters {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid var(--card-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+}
+
+.transactions-filters label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.transactions-filters input[type="checkbox"] {
+    margin: 0;
+}
+
+.transactions-filters select {
+    padding: 8px 12px;
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.transaction-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 20px;
+    transition: box-shadow 0.3s ease;
+}
+
+.transaction-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.transaction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.transaction-type {
+    background-color: var(--button-active-bg);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.transaction-type.trade {
+    background-color: #28a745;
+}
+
+.transaction-type.waiver {
+    background-color: #17a2b8;
+}
+
+.transaction-type.free-agent {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.transaction-type.drop {
+    background-color: #dc3545;
+}
+
+.transaction-date {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.transaction-details {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.transaction-team {
+    flex: 1;
+    min-width: 200px;
+}
+
+.transaction-team h4 {
+    margin: 0 0 10px 0;
+    color: var(--heading-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.transaction-team .avatar {
+    width: 25px;
+    height: 25px;
+}
+
+.transaction-players {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.transaction-players li {
+    background-color: var(--bg-primary);
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    border-left: 3px solid var(--button-active-bg);
+}
+
+.transaction-players .added {
+    border-left-color: #28a745;
+}
+
+.transaction-players .dropped {
+    border-left-color: #dc3545;
+}
+
+.transaction-players .player-name {
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.transaction-players .player-details {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.draft-pick-item {
+    background-color: var(--bg-primary);
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    border-left: 3px solid #6f42c1;
+}
+
+.draft-pick-item .pick-details {
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.draft-pick-item .pick-info {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+/* Trade specific styling */
+.trade-arrow {
+    align-self: center;
+    font-size: 1.5em;
+    color: var(--button-active-bg);
+    margin: 0 10px;
+}
+
+@media (max-width: 768px) {
+    .transactions-filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .transaction-details {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .trade-arrow {
+        transform: rotate(90deg);
+        margin: 10px 0;
+    }
+}
+
 
 
