@@ -2455,10 +2455,15 @@ class PlayerSearch {
     }
 
     displaySuggestions(players) {
+        console.log('displaySuggestions called with', players.length, 'players');
+        console.log('suggestionsContainer:', this.suggestionsContainer);
+        
         const html = players.map((player, index) => {
             const fullName = player.full_name || `${player.first_name || ''} ${player.last_name || ''}`.trim();
             const position = player.position || 'N/A';
             const team = player.team || 'FA';
+            
+            console.log(`Player ${index}:`, fullName, position, team);
             
             return `
                 <div class="suggestion-item" data-index="${index}" data-player-id="${player.player_id}">
@@ -2468,10 +2473,20 @@ class PlayerSearch {
             `;
         }).join('');
         
+        console.log('Generated HTML length:', html.length);
+        console.log('Setting innerHTML and display...');
+        
         this.suggestionsContainer.innerHTML = html;
         this.suggestionsContainer.style.display = 'block';
+        
+        console.log('Container after setting display:', this.suggestionsContainer.style.display);
+        console.log('Container visibility:', window.getComputedStyle(this.suggestionsContainer).visibility);
+        console.log('Container height:', window.getComputedStyle(this.suggestionsContainer).height);
+        
         this.suggestionItems = this.suggestionsContainer.querySelectorAll('.suggestion-item');
         this.currentSuggestionIndex = -1;
+        
+        console.log('Found suggestion items:', this.suggestionItems.length);
         
         // Add click listeners to suggestions
         this.suggestionItems.forEach(item => {
