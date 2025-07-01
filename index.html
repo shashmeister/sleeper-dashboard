@@ -40,6 +40,7 @@
         <button class="nav-tab" data-tab="teams-page">Teams</button>
         <button class="nav-tab" data-tab="transactions-page">Transactions</button>
         <button class="nav-tab" data-tab="matchups-page">Matchups</button>
+        <button class="nav-tab" data-tab="player-search-page">Players</button>
         <button class="nav-tab" data-tab="nfl-news-page">NFL News</button>
     </nav>
     <main>
@@ -190,6 +191,81 @@
                 <div id="playoff-bracket-container">
                     <!-- Playoff bracket will be loaded here -->
                     <p>Playoffs start Week 15</p>
+                </div>
+            </section>
+        </div>
+
+        <div id="player-search-page" class="page-content" style="display: none;">
+            <section id="player-search-section">
+                <h2>Player Database & Search</h2>
+                
+                <div class="search-controls">
+                    <div class="search-input-group">
+                        <input type="text" id="player-search-input" placeholder="Search players by name..." autocomplete="off">
+                        <button id="clear-search-btn">Clear</button>
+                    </div>
+                    
+                    <div class="search-filters">
+                        <div class="filter-group">
+                            <label>Position:</label>
+                            <select id="position-filter">
+                                <option value="all">All Positions</option>
+                                <option value="QB">QB</option>
+                                <option value="RB">RB</option>
+                                <option value="WR">WR</option>
+                                <option value="TE">TE</option>
+                                <option value="K">K</option>
+                                <option value="DEF">DEF</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>Availability:</label>
+                            <select id="availability-filter">
+                                <option value="all">All Players</option>
+                                <option value="owned">Owned</option>
+                                <option value="available">Available</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>Team:</label>
+                            <select id="nfl-team-filter">
+                                <option value="all">All NFL Teams</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="search-stats">
+                    <span id="search-results-count">0 players found</span>
+                    <span id="search-loading" style="display: none;">Searching...</span>
+                </div>
+                
+                <div id="player-search-results">
+                    <!-- Player results will be loaded here -->
+                    <div class="search-placeholder">
+                        <h3>🔍 Search for any NFL player</h3>
+                        <p>Find out who owns any player in your league, or discover available talent on waivers.</p>
+                        <ul>
+                            <li>Search by player name</li>
+                            <li>Filter by position or NFL team</li>
+                            <li>See ownership status instantly</li>
+                            <li>Quick access to available players</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="quick-access-section">
+                <h3>Quick Access</h3>
+                <div class="quick-access-buttons">
+                    <button class="quick-access-btn" data-filter="available,QB">Available QBs</button>
+                    <button class="quick-access-btn" data-filter="available,RB">Available RBs</button>
+                    <button class="quick-access-btn" data-filter="available,WR">Available WRs</button>
+                    <button class="quick-access-btn" data-filter="available,TE">Available TEs</button>
+                    <button class="quick-access-btn" data-filter="rookies">2024 Rookies</button>
+                    <button class="quick-access-btn" data-filter="free-agents">Free Agents</button>
                 </div>
             </section>
         </div>

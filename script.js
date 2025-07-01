@@ -2006,3 +2006,425 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Player Search Module
+class PlayerSearch {
+    constructor() {
+        this.searchResults = [];
+        this.allPlayers = [];
+        this.filteredPlayers = [];
+        this.searchInput = null;
+        this.positionFilter = null;
+        this.availabilityFilter = null;
+        this.nflTeamFilter = null;
+        this.searchTimeout = null;
+        this.currentPage = 1;
+        this.pageSize = 50;
+        
+        this.init();
+    }
+    
+    init() {
+        // Wait for DOM and data to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initElements());
+        } else {
+            this.initElements();
+        }
+    }
+    
+    initElements() {
+        // Get DOM elements
+        this.searchInput = document.getElementById('player-search-input');
+        this.positionFilter = document.getElementById('position-filter');
+        this.availabilityFilter = document.getElementById('availability-filter');
+        this.nflTeamFilter = document.getElementById('nfl-team-filter');
+        this.clearBtn = document.getElementById('clear-search-btn');
+        this.resultsContainer = document.getElementById('player-search-results');
+        this.resultsCount = document.getElementById('search-results-count');
+        this.loadingIndicator = document.getElementById('search-loading');
+        
+        if (!this.searchInput) {
+            console.log('Player search elements not ready yet, waiting...');
+            setTimeout(() => this.initElements(), 100);
+            return;
+        }
+        
+        this.setupEventListeners();
+        this.populateNFLTeamFilter();
+        this.setupQuickAccessButtons();
+    }
+    
+    setupEventListeners() {
+        // Search input with debouncing
+        this.searchInput.addEventListener('input', (e) => {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                this.performSearch();
+            }, 300);
+        });
+        
+        // Filter changes
+        [this.positionFilter, this.availabilityFilter, this.nflTeamFilter].forEach(filter => {
+            filter.addEventListener('change', () => this.performSearch());
+        });
+        
+        // Clear button
+        this.clearBtn.addEventListener('click', () => {
+            this.clearSearch();
+        });
+        
+        // Tab change listener
+        document.addEventListener('tabChange', (e) => {
+            if (e.detail.newTab === 'player-search-page') {
+                this.onTabActivated();
+            }
+        });
+    }
+    
+    setupQuickAccessButtons() {
+        const quickAccessBtns = document.querySelectorAll('.quick-access-btn');
+        quickAccessBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter;
+                this.applyQuickFilter(filter);
+            });
+        });
+    }
+    
+    applyQuickFilter(filter) {
+        this.clearSearch();
+        
+        if (filter.includes(',')) {
+            const [availability, position] = filter.split(',');
+            this.availabilityFilter.value = availability;
+            this.positionFilter.value = position;
+        } else if (filter === 'rookies') {
+            this.searchInput.value = '';
+            // We'll handle rookie filtering in the search logic
+        } else if (filter === 'free-agents') {
+            this.availabilityFilter.value = 'available';
+        }
+        
+        this.performSearch();
+    }
+    
+    populateNFLTeamFilter() {
+        const nflTeams = [
+            'ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE',
+            'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC',
+            'LV', 'LAC', 'LAR', 'MIA', 'MIN', 'NE', 'NO', 'NYG',
+            'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB', 'TEN', 'WAS'
+        ];
+        
+        nflTeams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team;
+            option.textContent = team;
+            this.nflTeamFilter.appendChild(option);
+        });
+    }
+    
+    onTabActivated() {
+        // Load player data if not already loaded
+        if (this.allPlayers.length === 0) {
+            this.loadPlayerData();
+        }
+    }
+    
+    async loadPlayerData() {
+        try {
+            this.showLoading(true);
+            
+            // We already have players data from the main app
+            if (globalLeagueData.players) {
+                this.processPlayerData(globalLeagueData.players);
+            } else {
+                // Fallback to fetch if not available
+                const players = await fetchWithCache('/players/nfl', 24 * 60 * 60 * 1000); // 24 hour cache
+                this.processPlayerData(players);
+            }
+        } catch (error) {
+            console.error('Error loading player data:', error);
+            this.showError('Failed to load player data');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    processPlayerData(players) {
+        // Convert players object to array and add ownership info
+        this.allPlayers = Object.values(players).map(player => {
+            const ownerInfo = this.getPlayerOwnership(player.player_id);
+            return {
+                ...player,
+                isOwned: !!ownerInfo,
+                ownerInfo: ownerInfo
+            };
+        });
+        
+        console.log(`Loaded ${this.allPlayers.length} players`);
+        this.updateResultsCount(this.allPlayers.length);
+    }
+    
+    getPlayerOwnership(playerId) {
+        if (!globalLeagueData.rosters) return null;
+        
+        for (const roster of globalLeagueData.rosters) {
+            if (roster.players && roster.players.includes(playerId)) {
+                const user = globalLeagueData.users.find(u => u.user_id === roster.owner_id);
+                return {
+                    team: user,
+                    roster: roster
+                };
+            }
+        }
+        return null;
+    }
+    
+    performSearch() {
+        const searchTerm = this.searchInput.value.toLowerCase().trim();
+        const position = this.positionFilter.value;
+        const availability = this.availabilityFilter.value;
+        const nflTeam = this.nflTeamFilter.value;
+        
+        if (this.allPlayers.length === 0) {
+            this.loadPlayerData();
+            return;
+        }
+        
+        this.showLoading(true);
+        
+        // Use setTimeout to prevent UI blocking
+        setTimeout(() => {
+            let filtered = [...this.allPlayers];
+            
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(player => {
+                    const name = (player.full_name || player.first_name + ' ' + player.last_name || '').toLowerCase();
+                    return name.includes(searchTerm);
+                });
+            }
+            
+            // Filter by position
+            if (position !== 'all') {
+                filtered = filtered.filter(player => player.position === position);
+            }
+            
+            // Filter by availability
+            if (availability === 'owned') {
+                filtered = filtered.filter(player => player.isOwned);
+            } else if (availability === 'available') {
+                filtered = filtered.filter(player => !player.isOwned);
+            }
+            
+            // Filter by NFL team
+            if (nflTeam !== 'all') {
+                filtered = filtered.filter(player => player.team === nflTeam);
+            }
+            
+            // Sort by fantasy relevance (position priority and years_exp)
+            filtered.sort((a, b) => {
+                const positionOrder = { QB: 1, RB: 2, WR: 3, TE: 4, K: 5, DEF: 6 };
+                const posA = positionOrder[a.position] || 7;
+                const posB = positionOrder[b.position] || 7;
+                
+                if (posA !== posB) return posA - posB;
+                
+                // Within same position, prioritize active players and fantasy relevance
+                if (a.status !== b.status) {
+                    if (a.status === 'Active') return -1;
+                    if (b.status === 'Active') return 1;
+                }
+                
+                // Then by years experience (veteran knowledge for dynasty)
+                return (b.years_exp || 0) - (a.years_exp || 0);
+            });
+            
+            this.filteredPlayers = filtered;
+            this.currentPage = 1; // Reset to first page
+            this.displayResults();
+            this.updateResultsCount(filtered.length);
+            this.showLoading(false);
+        }, 50);
+    }
+    
+    displayResults() {
+        if (this.filteredPlayers.length === 0) {
+            this.showNoResults();
+            return;
+        }
+        
+        // Show first page of results
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const endIndex = Math.min(startIndex + this.pageSize, this.filteredPlayers.length);
+        const pageResults = this.filteredPlayers.slice(startIndex, endIndex);
+        
+        const html = pageResults.map(player => this.createPlayerCard(player)).join('');
+        
+        if (this.currentPage === 1) {
+            this.resultsContainer.innerHTML = html;
+        } else {
+            // Append to existing results
+            const loadMoreContainer = this.resultsContainer.querySelector('.load-more-container');
+            if (loadMoreContainer) {
+                loadMoreContainer.remove();
+            }
+            this.resultsContainer.insertAdjacentHTML('beforeend', html);
+        }
+        
+        // Add load more button if needed
+        if (endIndex < this.filteredPlayers.length) {
+            this.addLoadMoreButton();
+        }
+    }
+    
+    createPlayerCard(player) {
+        const isOwned = player.isOwned;
+        const ownerInfo = player.ownerInfo;
+        const fullName = player.full_name || `${player.first_name || ''} ${player.last_name || ''}`.trim();
+        const position = player.position || 'N/A';
+        const team = player.team || 'FA';
+        const age = player.age || 'N/A';
+        const yearsExp = player.years_exp || 0;
+        
+        let ownerSection = '';
+        if (isOwned && ownerInfo) {
+            const teamName = ownerInfo.team.metadata?.team_name || ownerInfo.team.display_name || 'Unknown Team';
+            const avatar = ownerInfo.team.avatar ? 
+                `<img src="https://sleepercdn.com/avatars/thumbs/${ownerInfo.team.avatar}" class="avatar" alt="${teamName}">` :
+                '<div class="avatar-placeholder"></div>';
+            
+            ownerSection = `
+                <div class="owner-info">
+                    Owned by:
+                    <div class="owner-team">
+                        ${avatar}
+                        <span>${teamName}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="player-search-card ${isOwned ? 'owned' : 'available'}" data-player-id="${player.player_id}">
+                <div class="player-card-header">
+                    <div class="player-card-info">
+                        <div class="player-card-details">
+                            <div class="player-card-name">${fullName}</div>
+                            <div class="player-card-position">${position} • Age ${age} • ${yearsExp} years exp</div>
+                            <div class="player-card-team">${team}</div>
+                        </div>
+                    </div>
+                    <div class="player-card-status">
+                        <div class="ownership-badge ${isOwned ? 'owned' : 'available'}">
+                            ${isOwned ? 'Owned' : 'Available'}
+                        </div>
+                        ${ownerSection}
+                    </div>
+                </div>
+                
+                <div class="player-card-stats">
+                    <div class="player-stat">
+                        <div class="player-stat-label">Status</div>
+                        <div class="player-stat-value">${player.status || 'Active'}</div>
+                    </div>
+                    <div class="player-stat">
+                        <div class="player-stat-label">Position</div>
+                        <div class="player-stat-value">${position}</div>
+                    </div>
+                    <div class="player-stat">
+                        <div class="player-stat-label">NFL Team</div>
+                        <div class="player-stat-value">${team}</div>
+                    </div>
+                    <div class="player-stat">
+                        <div class="player-stat-label">Fantasy Pos</div>
+                        <div class="player-stat-value">${player.fantasy_positions ? player.fantasy_positions.join(', ') : position}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    addLoadMoreButton() {
+        const remaining = this.filteredPlayers.length - this.currentPage * this.pageSize;
+        const loadMoreContainer = document.createElement('div');
+        loadMoreContainer.className = 'load-more-container';
+        loadMoreContainer.innerHTML = `
+            <button class="quick-access-btn" style="margin: 20px auto; display: block;" onclick="playerSearch.loadMoreResults()">
+                Load More Players (${remaining} remaining)
+            </button>
+        `;
+        this.resultsContainer.appendChild(loadMoreContainer);
+    }
+    
+    loadMoreResults() {
+        this.currentPage++;
+        this.displayResults();
+    }
+    
+    showNoResults() {
+        const searchTerm = this.searchInput.value.trim();
+        const hasFilters = this.positionFilter.value !== 'all' || 
+                          this.availabilityFilter.value !== 'all' || 
+                          this.nflTeamFilter.value !== 'all';
+        
+        this.resultsContainer.innerHTML = `
+            <div class="search-placeholder">
+                <h3>🔍 No players found</h3>
+                <p>${searchTerm ? `No players match "${searchTerm}"` : 'No players match your current filters'}</p>
+                ${hasFilters ? '<p>Try adjusting your filters or search term.</p>' : ''}
+            </div>
+        `;
+    }
+    
+    clearSearch() {
+        this.searchInput.value = '';
+        this.positionFilter.value = 'all';
+        this.availabilityFilter.value = 'all';
+        this.nflTeamFilter.value = 'all';
+        this.currentPage = 1;
+        
+        // Show placeholder instead of all players
+        this.resultsContainer.innerHTML = `
+            <div class="search-placeholder">
+                <h3>🔍 Search for any NFL player</h3>
+                <p>Find out who owns any player in your league, or discover available talent on waivers.</p>
+                <ul>
+                    <li>Search by player name</li>
+                    <li>Filter by position or NFL team</li>
+                    <li>See ownership status instantly</li>
+                    <li>Quick access to available players</li>
+                </ul>
+            </div>
+        `;
+        
+        this.updateResultsCount(0);
+    }
+    
+    updateResultsCount(count) {
+        if (count === 0) {
+            this.resultsCount.textContent = 'Search for players above';
+        } else {
+            this.resultsCount.textContent = `${count} player${count === 1 ? '' : 's'} found`;
+        }
+    }
+    
+    showLoading(show) {
+        this.loadingIndicator.style.display = show ? 'inline' : 'none';
+    }
+    
+    showError(message) {
+        this.resultsContainer.innerHTML = `
+            <div class="search-placeholder">
+                <h3>⚠️ Error</h3>
+                <p>${message}</p>
+                <button class="quick-access-btn" onclick="playerSearch.loadPlayerData()">Try Again</button>
+            </div>
+        `;
+    }
+}
+
+// Initialize player search when DOM is ready
+const playerSearch = new PlayerSearch();
