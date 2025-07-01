@@ -2411,7 +2411,6 @@ class PlayerSearch {
         
         const matches = this.allPlayers
             .filter(player => player.searchName && player.searchName.includes(query.toLowerCase()))
-            .slice(0, 20) // Get more matches for better sorting
             .sort((a, b) => {
                 const queryLower = query.toLowerCase();
                 
@@ -2449,7 +2448,7 @@ class PlayerSearch {
                 // Final tie-breaker: alphabetical
                 return a.searchName.localeCompare(b.searchName);
             })
-            .slice(0, 8); // Now limit to 8 after sorting
+            .slice(0, 20); // Show more results - up to 20 players
         
         if (matches.length > 0) {
             this.displaySuggestions(matches);

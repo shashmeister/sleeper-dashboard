@@ -1568,7 +1568,7 @@ body.dark-mode .disclaimer-content strong {
     background: var(--bg-primary);
     border: 1px solid var(--card-border);
     border-radius: 0 0 8px 8px;
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
