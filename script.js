@@ -2013,6 +2013,7 @@ class PlayerSearch {
         this.searchResults = [];
         this.allPlayers = [];
         this.filteredPlayers = [];
+        this.leagueData = null;
         this.searchInput = null;
         this.positionFilter = null;
         this.availabilityFilter = null;
@@ -2125,10 +2126,10 @@ class PlayerSearch {
         });
     }
     
-    onTabActivated() {
+    async onTabActivated() {
         // Load player data if not already loaded
-        if (this.allPlayers.length === 0) {
-            this.loadPlayerData();
+        if (this.allPlayers.length === 0 || !this.leagueData) {
+            await this.loadPlayerData();
         }
     }
     
@@ -2136,14 +2137,22 @@ class PlayerSearch {
         try {
             this.showLoading(true);
             
-            // We already have players data from the main app
-            if (globalLeagueData.players) {
-                this.processPlayerData(globalLeagueData.players);
-            } else {
-                // Fallback to fetch if not available
-                const players = await fetchWithCache('/players/nfl', 24 * 60 * 60 * 1000); // 24 hour cache
-                this.processPlayerData(players);
-            }
+            // Fetch all required data
+            const [players, rosters, users] = await Promise.all([
+                fetchAllPlayers(),
+                fetchRosters(),
+                fetchUsers()
+            ]);
+            
+            // Store league data for ownership lookups
+            this.leagueData = {
+                players,
+                rosters,
+                users
+            };
+            
+            this.processPlayerData(players);
+            
         } catch (error) {
             console.error('Error loading player data:', error);
             this.showError('Failed to load player data');
@@ -2168,11 +2177,11 @@ class PlayerSearch {
     }
     
     getPlayerOwnership(playerId) {
-        if (!globalLeagueData.rosters) return null;
+        if (!this.leagueData || !this.leagueData.rosters) return null;
         
-        for (const roster of globalLeagueData.rosters) {
+        for (const roster of this.leagueData.rosters) {
             if (roster.players && roster.players.includes(playerId)) {
-                const user = globalLeagueData.users.find(u => u.user_id === roster.owner_id);
+                const user = this.leagueData.users.find(u => u.user_id === roster.owner_id);
                 return {
                     team: user,
                     roster: roster
@@ -2188,7 +2197,7 @@ class PlayerSearch {
         const availability = this.availabilityFilter.value;
         const nflTeam = this.nflTeamFilter.value;
         
-        if (this.allPlayers.length === 0) {
+        if (this.allPlayers.length === 0 || !this.leagueData) {
             this.loadPlayerData();
             return;
         }
