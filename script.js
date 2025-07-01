@@ -139,6 +139,13 @@ async function fetchNews() {
 
 function displayNews(articles) {
     const newsContainer = document.getElementById('news-container');
+    
+    // Check if news container exists (we removed news section in redesign)
+    if (!newsContainer) {
+        console.log('News container not found - news section was removed in redesign');
+        return;
+    }
+    
     if (!articles || articles.length === 0) {
         newsContainer.innerHTML = '<p>No news available at the moment.</p>';
         return;
@@ -353,11 +360,7 @@ async function displayLeagueInfo() {
     const rosters = await fetchRosters();
     const users = await fetchUsers();
     const allPlayers = await fetchAllPlayers();
-    const newsArticles = await fetchNews();
-
-    if (newsArticles) {
-        displayNews(newsArticles);
-    }
+    // Removed news fetching since we removed the news section in redesign
 
     let draft = null;
     let draftPicks = [];
