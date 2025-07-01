@@ -402,5 +402,45 @@ h2 {
     color: var(--text-muted-color, #6c757d); /* Fallback color */
 }
 
+/* Responsive Design */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    header h1 {
+        font-size: 2em;
+        margin-bottom: 1rem;
+    }
+
+    header #dark-mode-toggle {
+        position: static;
+        transform: none;
+        margin-top: 0.5rem;
+    }
+
+    .draft-display-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .draft-display-controls button {
+        width: 100%;
+        margin: 0;
+    }
+
+    main {
+        padding: 15px;
+        margin: 15px;
+    }
+
+    #teams-container,
+    #players-by-round-container {
+        grid-template-columns: 1fr;
+    }
+}
+
 
 
