@@ -588,6 +588,8 @@ function setupTabNavigation() {
                 displayStandings();
             } else if (targetPageId === 'transactions-page') {
                 displayTransactions();
+            } else if (targetPageId === 'matchups-page') {
+                displayMatchups();
             }
         });
     });
@@ -1425,6 +1427,446 @@ function renderWaiverOrFreeAgent(transaction, usersMap, rostersByUserId, allPlay
 
 function renderDrop(transaction, usersMap, rostersByUserId, allPlayers) {
     return renderWaiverOrFreeAgent(transaction, usersMap, rostersByUserId, allPlayers);
+}
+
+// --- Matchups Functions ---
+
+let currentWeek = 1;
+const REGULAR_SEASON_WEEKS = 14;
+const PLAYOFF_START_WEEK = 15;
+const TOTAL_WEEKS = 17;
+
+async function fetchMatchups(week) {
+    try {
+        const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}/matchups/${week}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch matchups for week ${week}: ${response.status}`);
+        }
+        const matchups = await response.json();
+        return matchups || [];
+    } catch (error) {
+        logError('API Error', `Error fetching matchups for week ${week}`, { originalError: error.message });
+        return [];
+    }
+}
+
+async function displayMatchups() {
+    const container = document.getElementById('current-matchups-container');
+    const scheduleContainer = document.getElementById('schedule-container');
+    
+    if (!container || !scheduleContainer) return;
+
+    try {
+        // Set current week based on NFL state or default to 1
+        const nflState = await fetch(`${SLEEPER_API_BASE}/state/nfl`).then(r => r.json());
+        currentWeek = Math.max(1, nflState.week || 1);
+        
+        // Update week display
+        updateWeekDisplay();
+        
+        // Load current week matchups
+        await loadWeekMatchups(currentWeek);
+        
+        // Load full season schedule
+        await loadSchedule();
+        
+        // Setup event listeners
+        setupMatchupNavigation();
+        
+    } catch (error) {
+        container.innerHTML = '<p>Error loading matchups. Please try again.</p>';
+        scheduleContainer.innerHTML = '<p>Error loading schedule. Please try again.</p>';
+        logError('Matchups Error', 'Failed to display matchups', { originalError: error.message });
+    }
+}
+
+async function loadWeekMatchups(week) {
+    const container = document.getElementById('current-matchups-container');
+    if (!container) return;
+
+    try {
+        container.innerHTML = '<p>Loading matchups...</p>';
+        
+        const [matchupsData, users, rosters] = await Promise.all([
+            fetchMatchups(week),
+            fetchUsers(),
+            fetchRosters()
+        ]);
+
+        if (matchupsData.length === 0) {
+            container.innerHTML = `<p>No matchups available for Week ${week} yet.</p>`;
+            return;
+        }
+
+        // Create user and roster maps
+        const usersMap = users.reduce((map, user) => {
+            map[user.user_id] = user;
+            return map;
+        }, {});
+
+        const rostersByUserId = {};
+        rosters.forEach(roster => {
+            const owner = users.find(user => user.user_id === roster.owner_id);
+            if (owner) {
+                rostersByUserId[owner.user_id] = roster;
+            }
+        });
+
+        renderWeekMatchups(container, matchupsData, usersMap, rostersByUserId, week);
+
+    } catch (error) {
+        container.innerHTML = '<p>Error loading matchups for this week.</p>';
+        logError('Week Matchups Error', `Failed to load week ${week} matchups`, { originalError: error.message });
+    }
+}
+
+function renderWeekMatchups(container, matchupsData, usersMap, rostersByUserId, week) {
+    // Group matchups by matchup_id
+    const matchupGroups = {};
+    matchupsData.forEach(matchup => {
+        const matchupId = matchup.matchup_id;
+        if (!matchupGroups[matchupId]) {
+            matchupGroups[matchupId] = [];
+        }
+        matchupGroups[matchupId].push(matchup);
+    });
+
+    const matchupCards = Object.keys(matchupGroups).map(matchupId => {
+        const matchupTeams = matchupGroups[matchupId];
+        
+        if (matchupTeams.length !== 2) {
+            return ''; // Skip incomplete matchups
+        }
+
+        const [team1Data, team2Data] = matchupTeams;
+        
+        const team1 = getTeamInfo(team1Data, usersMap, rostersByUserId);
+        const team2 = getTeamInfo(team2Data, usersMap, rostersByUserId);
+
+        // Determine winner
+        const team1Score = team1Data.points || 0;
+        const team2Score = team2Data.points || 0;
+        const hasScores = team1Score > 0 || team2Score > 0;
+        
+        return `
+            <div class="matchup-card">
+                <div class="matchup-header">
+                    Matchup ${matchupId}
+                </div>
+                <div class="matchup-teams">
+                    <div class="matchup-team ${hasScores && team1Score > team2Score ? 'winner' : ''}">
+                        <h4>
+                            ${team1.avatarUrl ? `<img src="${team1.avatarUrl}" alt="${team1.teamName} Avatar" class="avatar">` : ''}
+                            <span class="team-name">${team1.teamName}</span>
+                        </h4>
+                        <div class="manager-name">${team1.managerName}</div>
+                        <div class="matchup-score ${!hasScores ? 'projected' : ''}">
+                            ${hasScores ? team1Score.toFixed(1) : (team1Data.points_projected || 0).toFixed(1)}
+                        </div>
+                    </div>
+                    <div class="matchup-vs">VS</div>
+                    <div class="matchup-team ${hasScores && team2Score > team1Score ? 'winner' : ''}">
+                        <h4>
+                            ${team2.avatarUrl ? `<img src="${team2.avatarUrl}" alt="${team2.teamName} Avatar" class="avatar">` : ''}
+                            <span class="team-name">${team2.teamName}</span>
+                        </h4>
+                        <div class="manager-name">${team2.managerName}</div>
+                        <div class="matchup-score ${!hasScores ? 'projected' : ''}">
+                            ${hasScores ? team2Score.toFixed(1) : (team2Data.points_projected || 0).toFixed(1)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if (matchupCards) {
+        container.innerHTML = matchupCards;
+    } else {
+        container.innerHTML = `<p>No complete matchups found for Week ${week}.</p>`;
+    }
+}
+
+function getTeamInfo(matchupData, usersMap, rostersByUserId) {
+    const roster = Object.values(rostersByUserId).find(r => r.roster_id === matchupData.roster_id);
+    const user = roster ? usersMap[roster.owner_id] : null;
+    
+    return {
+        teamName: user?.metadata?.team_name || user?.display_name || 'Unknown Team',
+        managerName: user?.display_name || 'Unknown Manager',
+        avatarUrl: user?.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : ''
+    };
+}
+
+async function loadSchedule() {
+    const container = document.getElementById('schedule-container');
+    if (!container) return;
+
+    try {
+        container.innerHTML = '<p>Loading schedule...</p>';
+        
+        const [users, rosters] = await Promise.all([
+            fetchUsers(),
+            fetchRosters()
+        ]);
+
+        // Create team mapping
+        const teams = rosters.map(roster => {
+            const user = users.find(u => u.user_id === roster.owner_id);
+            return {
+                rosterId: roster.roster_id,
+                teamName: user?.metadata?.team_name || user?.display_name || 'Unknown Team',
+                managerName: user?.display_name || 'Unknown Manager',
+                avatarUrl: user?.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : ''
+            };
+        });
+
+        // Generate or fetch schedule
+        const schedule = await generateSchedule(teams);
+        
+        // Render in grid view by default
+        renderScheduleGrid(container, schedule, teams);
+        
+        // Setup view toggle listeners
+        setupScheduleViewToggle(schedule, teams);
+
+    } catch (error) {
+        container.innerHTML = '<p>Error loading schedule.</p>';
+        logError('Schedule Error', 'Failed to load schedule', { originalError: error.message });
+    }
+}
+
+async function generateSchedule(teams) {
+    // Since Sleeper doesn't provide schedule until season starts,
+    // we'll create a placeholder structure that can be filled later
+    const schedule = {};
+    
+    for (let week = 1; week <= TOTAL_WEEKS; week++) {
+        schedule[week] = [];
+        
+        // Try to fetch actual matchups if available
+        try {
+            const matchups = await fetchMatchups(week);
+            if (matchups.length > 0) {
+                // Group by matchup_id
+                const matchupGroups = {};
+                matchups.forEach(m => {
+                    if (!matchupGroups[m.matchup_id]) {
+                        matchupGroups[m.matchup_id] = [];
+                    }
+                    matchupGroups[m.matchup_id].push(m.roster_id);
+                });
+                
+                Object.values(matchupGroups).forEach(rosterIds => {
+                    if (rosterIds.length === 2) {
+                        schedule[week].push(rosterIds);
+                    }
+                });
+            } else {
+                // Placeholder matchups for future weeks
+                // Simple round-robin style pairing
+                const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
+                for (let i = 0; i < shuffledTeams.length; i += 2) {
+                    if (i + 1 < shuffledTeams.length) {
+                        schedule[week].push([
+                            shuffledTeams[i].rosterId,
+                            shuffledTeams[i + 1].rosterId
+                        ]);
+                    }
+                }
+            }
+        } catch (error) {
+            // Fallback to placeholder for this week
+            const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < shuffledTeams.length; i += 2) {
+                if (i + 1 < shuffledTeams.length) {
+                    schedule[week].push([
+                        shuffledTeams[i].rosterId,
+                        shuffledTeams[i + 1].rosterId
+                    ]);
+                }
+            }
+        }
+    }
+    
+    return schedule;
+}
+
+function renderScheduleGrid(container, schedule, teams) {
+    const teamMap = teams.reduce((map, team) => {
+        map[team.rosterId] = team;
+        return map;
+    }, {});
+
+    let gridHTML = `
+        <div class="schedule-grid">
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th class="team-column header">Team</th>
+                        ${Array.from({length: TOTAL_WEEKS}, (_, i) => 
+                            `<th>W${i + 1}${i + 1 >= PLAYOFF_START_WEEK ? '<br>(P)' : ''}</th>`
+                        ).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    teams.forEach(team => {
+        gridHTML += `
+            <tr>
+                <td class="team-column">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.teamName}" class="avatar" style="width: 20px; height: 20px;">` : ''}
+                        <span style="font-size: 0.8em;">${team.teamName}</span>
+                    </div>
+                </td>
+        `;
+
+        for (let week = 1; week <= TOTAL_WEEKS; week++) {
+            const matchup = schedule[week]?.find(m => m.includes(team.rosterId));
+            let cellContent = 'BYE';
+            let cellClass = 'schedule-cell bye';
+
+            if (matchup) {
+                const opponent = matchup.find(id => id !== team.rosterId);
+                const opponentTeam = teamMap[opponent];
+                if (opponentTeam) {
+                    cellContent = opponentTeam.teamName.split(' ').map(word => word.charAt(0)).join('').substring(0, 3);
+                    cellClass = week >= PLAYOFF_START_WEEK ? 'schedule-cell playoff' : 'schedule-cell';
+                }
+            }
+
+            gridHTML += `<td class="${cellClass}">${cellContent}</td>`;
+        }
+
+        gridHTML += '</tr>';
+    });
+
+    gridHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    container.innerHTML = gridHTML;
+}
+
+function renderScheduleList(container, schedule, teams) {
+    const teamMap = teams.reduce((map, team) => {
+        map[team.rosterId] = team;
+        return map;
+    }, {});
+
+    let listHTML = '<div class="schedule-list">';
+
+    for (let week = 1; week <= TOTAL_WEEKS; week++) {
+        const isPlayoffs = week >= PLAYOFF_START_WEEK;
+        listHTML += `
+            <div class="week-block">
+                <h4>Week ${week}${isPlayoffs ? ' (Playoffs)' : ''}</h4>
+                <div class="week-matchups">
+        `;
+
+        const weekMatchups = schedule[week] || [];
+        if (weekMatchups.length === 0) {
+            listHTML += '<p style="text-align: center; color: var(--text-secondary);">No matchups scheduled</p>';
+        } else {
+            weekMatchups.forEach(matchup => {
+                if (matchup.length === 2) {
+                    const team1 = teamMap[matchup[0]];
+                    const team2 = teamMap[matchup[1]];
+                    
+                    if (team1 && team2) {
+                        listHTML += `
+                            <div class="week-matchup">
+                                <div class="team-info">
+                                    ${team1.avatarUrl ? `<img src="${team1.avatarUrl}" alt="${team1.teamName}" class="avatar">` : ''}
+                                    <span class="team-name">${team1.teamName}</span>
+                                </div>
+                                <span class="week-matchup-vs">vs</span>
+                                <div class="team-info">
+                                    ${team2.avatarUrl ? `<img src="${team2.avatarUrl}" alt="${team2.teamName}" class="avatar">` : ''}
+                                    <span class="team-name">${team2.teamName}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            });
+        }
+
+        listHTML += `
+                </div>
+            </div>
+        `;
+    }
+
+    listHTML += '</div>';
+    container.innerHTML = listHTML;
+}
+
+function setupMatchupNavigation() {
+    const prevBtn = document.getElementById('prev-week-btn');
+    const nextBtn = document.getElementById('next-week-btn');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentWeek > 1) {
+                currentWeek--;
+                updateWeekDisplay();
+                loadWeekMatchups(currentWeek);
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (currentWeek < TOTAL_WEEKS) {
+                currentWeek++;
+                updateWeekDisplay();
+                loadWeekMatchups(currentWeek);
+            }
+        });
+    }
+}
+
+function setupScheduleViewToggle(schedule, teams) {
+    const gridBtn = document.getElementById('view-schedule-grid-btn');
+    const listBtn = document.getElementById('view-schedule-list-btn');
+    const container = document.getElementById('schedule-container');
+
+    if (gridBtn && listBtn && container) {
+        gridBtn.addEventListener('click', () => {
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
+            renderScheduleGrid(container, schedule, teams);
+        });
+
+        listBtn.addEventListener('click', () => {
+            listBtn.classList.add('active');
+            gridBtn.classList.remove('active');
+            renderScheduleList(container, schedule, teams);
+        });
+    }
+}
+
+function updateWeekDisplay() {
+    const display = document.getElementById('current-week-display');
+    const prevBtn = document.getElementById('prev-week-btn');
+    const nextBtn = document.getElementById('next-week-btn');
+
+    if (display) {
+        display.textContent = `Week ${currentWeek}`;
+    }
+
+    if (prevBtn) {
+        prevBtn.disabled = currentWeek <= 1;
+    }
+
+    if (nextBtn) {
+        nextBtn.disabled = currentWeek >= TOTAL_WEEKS;
+    }
 }
 
 // Run the function when the page loads

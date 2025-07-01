@@ -39,6 +39,7 @@
         <button class="nav-tab" data-tab="standings-page">Standings</button>
         <button class="nav-tab" data-tab="teams-page">Teams</button>
         <button class="nav-tab" data-tab="transactions-page">Transactions</button>
+        <button class="nav-tab" data-tab="matchups-page">Matchups</button>
         <button class="nav-tab" data-tab="nfl-news-page">NFL News</button>
     </nav>
     <main>
@@ -154,6 +155,41 @@
                 <div id="transactions-container">
                     <!-- Transactions will be loaded here by JavaScript -->
                     <p>Loading transactions...</p>
+                </div>
+            </section>
+        </div>
+
+        <div id="matchups-page" class="page-content" style="display: none;">
+            <section id="current-week-section">
+                <h2>Current Week Matchups</h2>
+                <div class="week-selector">
+                    <button id="prev-week-btn">← Previous Week</button>
+                    <span id="current-week-display">Week 1</span>
+                    <button id="next-week-btn">Next Week →</button>
+                </div>
+                <div id="current-matchups-container">
+                    <!-- Current week matchups will be loaded here -->
+                    <p>Loading matchups...</p>
+                </div>
+            </section>
+
+            <section id="schedule-grid-section">
+                <h2>Full Season Schedule</h2>
+                <div class="schedule-view-controls">
+                    <button id="view-schedule-grid-btn" class="active">Grid View</button>
+                    <button id="view-schedule-list-btn">List View</button>
+                </div>
+                <div id="schedule-container">
+                    <!-- Schedule grid/list will be loaded here -->
+                    <p>Loading schedule...</p>
+                </div>
+            </section>
+
+            <section id="playoff-bracket-section" style="display: none;">
+                <h2>Playoff Bracket</h2>
+                <div id="playoff-bracket-container">
+                    <!-- Playoff bracket will be loaded here -->
+                    <p>Playoffs start Week 15</p>
                 </div>
             </section>
         </div>
