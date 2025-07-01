@@ -1576,6 +1576,9 @@ body.dark-mode .disclaimer-content strong {
 
 .search-input-group {
     position: relative;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .suggestion-item {
