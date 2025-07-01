@@ -2395,7 +2395,7 @@ class PlayerSearch {
         });
         
         console.log(`Loaded ${this.allPlayers.length} players`);
-        this.updateResultsCount(this.allPlayers.length);
+        // Don't show player count until user performs a search
     }
     
     getPlayerOwnership(playerId) {
@@ -2636,8 +2636,11 @@ class PlayerSearch {
     
     updateResultsCount(count) {
         if (count === 0) {
-            this.resultsCount.textContent = 'Search for players above';
+            // Hide the count when no search has been performed or no results
+            this.resultsCount.style.display = 'none';
         } else {
+            // Show the count when there are results
+            this.resultsCount.style.display = 'inline';
             this.resultsCount.textContent = `${count} player${count === 1 ? '' : 's'} found`;
         }
     }
