@@ -301,7 +301,7 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
             const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
             const teamCard = document.createElement('div');
             teamCard.classList.add('team-card');
-            teamCard.innerHTML = `<h3>
+            teamCard.innerHTML = `<h3 class="clickable-team-header" data-roster-id="${roster.roster_id}" data-user-id="${roster.owner_id}">
                 ${avatarUrl ? `<img src="${avatarUrl}" alt="${user.display_name} Avatar" class="avatar">` : ''}
                 ${teamName}
             </h3>`;
@@ -331,6 +331,16 @@ async function displayPlayersByTeam(allPlayers, rosters, users, usersMap, teamDr
                 const p = document.createElement('p');
                 p.textContent = 'No players drafted yet.';
                 teamCard.appendChild(p);
+            }
+
+            // Add click event to team header for navigation to team page
+            const teamHeader = teamCard.querySelector('.clickable-team-header');
+            if (teamHeader) {
+                teamHeader.addEventListener('click', () => {
+                    // Switch to teams tab and show team details
+                    switchToTeamsTab();
+                    showTeamDetails(roster.roster_id, roster.owner_id);
+                });
             }
 
             teamsContainer.appendChild(teamCard);
@@ -588,6 +598,35 @@ function setupTeamNavigation() {
             document.getElementById('individual-team-section').style.display = 'none';
         });
     }
+}
+
+function switchToTeamsTab() {
+    // Hide all pages
+    const pages = document.querySelectorAll('.page-content');
+    pages.forEach(page => {
+        page.style.display = 'none';
+    });
+
+    // Deactivate all tabs
+    const tabs = document.querySelectorAll('.nav-tab');
+    tabs.forEach(t => {
+        t.classList.remove('active');
+    });
+
+    // Show teams page and activate tab
+    const teamsPage = document.getElementById('teams-page');
+    const teamsTab = document.querySelector('[data-tab="teams-page"]');
+    
+    if (teamsPage) {
+        teamsPage.style.display = 'block';
+    }
+    
+    if (teamsTab) {
+        teamsTab.classList.add('active');
+    }
+
+    // Load teams data if not already loaded
+    displayTeamsOverview();
 }
 
 // Global variables for team data

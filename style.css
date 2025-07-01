@@ -220,6 +220,15 @@ h2 {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
+.clickable-team-header {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.clickable-team-header:hover {
+    color: var(--heading-color);
+}
+
 .team-card h3,
 .draft-round h3 {
     margin-top: 0;
