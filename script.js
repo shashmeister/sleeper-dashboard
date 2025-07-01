@@ -2257,19 +2257,11 @@ class PlayerSearch {
         this.resultsContainer = document.getElementById('player-search-results');
         this.suggestionsContainer = document.getElementById('search-suggestions');
         
-        console.log('DOM elements found:');
-        console.log('- searchInput:', !!this.searchInput);
-        console.log('- clearBtn:', !!this.clearBtn);
-        console.log('- resultsContainer:', !!this.resultsContainer);
-        console.log('- suggestionsContainer:', !!this.suggestionsContainer);
-        
         if (!this.searchInput) {
-            console.log('Player search elements not ready yet, waiting...');
             setTimeout(() => this.initElements(), 100);
             return;
         }
         
-        console.log('Setting up event listeners...');
         this.setupEventListeners();
         this.setupExampleClickHandlers();
         
@@ -2280,17 +2272,14 @@ class PlayerSearch {
     setupEventListeners() {
         // Search input with debouncing for autocomplete
         this.searchInput.addEventListener('input', (e) => {
-            console.log('Input event triggered, value:', e.target.value);
             clearTimeout(this.searchTimeout);
             const query = e.target.value.trim();
             
             if (query.length >= 2) {
-                console.log('Query length >= 2, setting timeout for:', query);
                 this.searchTimeout = setTimeout(() => {
                     this.showSuggestions(query);
                 }, 200);
             } else {
-                console.log('Query too short, hiding suggestions');
                 this.hideSuggestions();
             }
         });
@@ -2342,6 +2331,9 @@ class PlayerSearch {
     }
     
     async onTabActivated() {
+        // Reset search when tab becomes active
+        this.clearSearch();
+        
         // Load player data if not already loaded
         if (this.allPlayers.length === 0 || !this.leagueData) {
             await this.loadPlayerData();
@@ -2350,15 +2342,12 @@ class PlayerSearch {
     
     async loadPlayerData() {
         try {
-            console.log('Loading player data...');
             // Fetch all required data
             const [players, rosters, users] = await Promise.all([
                 fetchAllPlayers(),
                 fetchRosters(),
                 fetchUsers()
             ]);
-            
-            console.log('Fetched data - players:', Object.keys(players || {}).length, 'rosters:', rosters?.length, 'users:', users?.length);
             
             // Store league data for ownership lookups
             this.leagueData = {
@@ -2386,8 +2375,6 @@ class PlayerSearch {
                 searchName: this.getPlayerSearchName(player)
             };
         });
-        
-        console.log(`Loaded ${this.allPlayers.length} players`);
     }
 
     getPlayerSearchName(player) {
@@ -2412,11 +2399,7 @@ class PlayerSearch {
     }
     
     showSuggestions(query) {
-        console.log('showSuggestions called with query:', query);
-        console.log('allPlayers length:', this.allPlayers.length);
-        
         if (this.allPlayers.length === 0) {
-            console.log('No player data, loading...');
             this.loadPlayerData().then(() => {
                 // Retry after data loads
                 if (this.allPlayers.length > 0) {
@@ -2428,24 +2411,45 @@ class PlayerSearch {
         
         const matches = this.allPlayers
             .filter(player => player.searchName && player.searchName.includes(query.toLowerCase()))
-            .slice(0, 8) // Limit to 8 suggestions
+            .slice(0, 20) // Get more matches for better sorting
             .sort((a, b) => {
-                // Prioritize exact matches at the start of the name
-                const aStartsWith = a.searchName.startsWith(query.toLowerCase());
-                const bStartsWith = b.searchName.startsWith(query.toLowerCase());
+                const queryLower = query.toLowerCase();
                 
-                if (aStartsWith && !bStartsWith) return -1;
-                if (!aStartsWith && bStartsWith) return 1;
+                // Check different types of matches
+                const aLastNameMatch = a.last_name && a.last_name.toLowerCase().startsWith(queryLower);
+                const bLastNameMatch = b.last_name && b.last_name.toLowerCase().startsWith(queryLower);
+                const aFirstNameMatch = a.first_name && a.first_name.toLowerCase().startsWith(queryLower);
+                const bFirstNameMatch = b.first_name && b.first_name.toLowerCase().startsWith(queryLower);
+                const aFullNameMatch = a.searchName.startsWith(queryLower);
+                const bFullNameMatch = b.searchName.startsWith(queryLower);
                 
-                // Then by fantasy relevance
+                // Priority 1: Last name matches (most important for "chase" -> "Ja'Marr Chase")
+                if (aLastNameMatch && !bLastNameMatch) return -1;
+                if (!aLastNameMatch && bLastNameMatch) return 1;
+                
+                // Priority 2: Full name matches (exact start)
+                if (aFullNameMatch && !bFullNameMatch) return -1;
+                if (!aFullNameMatch && bFullNameMatch) return 1;
+                
+                // Priority 3: First name matches
+                if (aFirstNameMatch && !bFirstNameMatch) return -1;
+                if (!aFirstNameMatch && bFirstNameMatch) return 1;
+                
+                // Priority 4: Fantasy relevance by position
                 const positionOrder = { QB: 1, RB: 2, WR: 3, TE: 4, K: 5, DEF: 6 };
                 const posA = positionOrder[a.position] || 7;
                 const posB = positionOrder[b.position] || 7;
                 
-                return posA - posB;
-            });
-        
-        console.log('Found matches:', matches.length);
+                if (posA !== posB) return posA - posB;
+                
+                // Priority 5: Active players first
+                if (a.status === 'Active' && b.status !== 'Active') return -1;
+                if (a.status !== 'Active' && b.status === 'Active') return 1;
+                
+                // Final tie-breaker: alphabetical
+                return a.searchName.localeCompare(b.searchName);
+            })
+            .slice(0, 8); // Now limit to 8 after sorting
         
         if (matches.length > 0) {
             this.displaySuggestions(matches);
@@ -2455,15 +2459,10 @@ class PlayerSearch {
     }
 
     displaySuggestions(players) {
-        console.log('displaySuggestions called with', players.length, 'players');
-        console.log('suggestionsContainer:', this.suggestionsContainer);
-        
         const html = players.map((player, index) => {
             const fullName = player.full_name || `${player.first_name || ''} ${player.last_name || ''}`.trim();
             const position = player.position || 'N/A';
             const team = player.team || 'FA';
-            
-            console.log(`Player ${index}:`, fullName, position, team);
             
             return `
                 <div class="suggestion-item" data-index="${index}" data-player-id="${player.player_id}">
@@ -2473,46 +2472,10 @@ class PlayerSearch {
             `;
         }).join('');
         
-        console.log('Generated HTML length:', html.length);
-        console.log('Setting innerHTML and display...');
-        
         this.suggestionsContainer.innerHTML = html;
         this.suggestionsContainer.style.display = 'block';
-        
-        console.log('Container after setting display:', this.suggestionsContainer.style.display);
-        console.log('Container visibility:', window.getComputedStyle(this.suggestionsContainer).visibility);
-        console.log('Container height:', window.getComputedStyle(this.suggestionsContainer).height);
-        
-        // Check positioning
-        const rect = this.suggestionsContainer.getBoundingClientRect();
-        console.log('Container position:', {
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height,
-            bottom: rect.bottom,
-            right: rect.right
-        });
-        
-        const inputRect = this.searchInput.getBoundingClientRect();
-        console.log('Input position:', {
-            top: inputRect.top,
-            left: inputRect.left,
-            width: inputRect.width,
-            height: inputRect.height,
-            bottom: inputRect.bottom
-        });
-        
-        // Check if container is in viewport
-        const isInViewport = rect.top >= 0 && rect.left >= 0 && 
-                           rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
-        console.log('Is in viewport:', isInViewport);
-        console.log('Window size:', { width: window.innerWidth, height: window.innerHeight });
-        
         this.suggestionItems = this.suggestionsContainer.querySelectorAll('.suggestion-item');
         this.currentSuggestionIndex = -1;
-        
-        console.log('Found suggestion items:', this.suggestionItems.length);
         
         // Add click listeners to suggestions
         this.suggestionItems.forEach(item => {
