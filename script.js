@@ -655,9 +655,11 @@ async function displayStandings() {
         const users = await fetchUsers();
         const allPlayers = await fetchAllPlayers();
         let draftPicks = [];
+        let draft = null;
         
         if (league && league.draft_id) {
             draftPicks = await fetchDraftPicks(league.draft_id);
+            draft = await fetchDraftDetails(league.draft_id);
         }
 
         // Store in global cache
@@ -666,7 +668,8 @@ async function displayStandings() {
             rosters,
             users,
             allPlayers,
-            draftPicks
+            draftPicks,
+            draft
         };
 
         renderStandings(standingsContainer, playoffContainer, globalLeagueData);
@@ -914,9 +917,11 @@ async function displayTeamsOverview() {
         const users = await fetchUsers();
         const allPlayers = await fetchAllPlayers();
         let draftPicks = [];
+        let draft = null;
         
         if (league && league.draft_id) {
             draftPicks = await fetchDraftPicks(league.draft_id);
+            draft = await fetchDraftDetails(league.draft_id);
         }
 
         // Store in global cache
@@ -925,7 +930,8 @@ async function displayTeamsOverview() {
             rosters,
             users,
             allPlayers,
-            draftPicks
+            draftPicks,
+            draft
         };
 
         renderTeamsOverview(container, globalLeagueData);
@@ -936,7 +942,7 @@ async function displayTeamsOverview() {
 }
 
 function renderTeamsOverview(container, data) {
-    const { league, rosters, users, allPlayers, draftPicks } = data;
+    const { league, rosters, users, allPlayers, draftPicks, draft } = data;
     
     if (!rosters || !users || rosters.length === 0) {
         container.innerHTML = '<p>No teams data available.</p>';
@@ -945,36 +951,18 @@ function renderTeamsOverview(container, data) {
 
     const usersMap = new Map(users.map(user => [user.user_id, user]));
     
-    // Determine data source based on draft status
+    // Always use current rosters (draft is complete, show post-transaction rosters)
     let teamPlayerData = new Map();
     
-    if (league && league.draft_id && draftPicks.length > 0) {
-        // Use draft picks during/after draft
-        draftPicks.forEach(pick => {
-            const player = allPlayers[pick.player_id];
-            if (player) {
-                if (!teamPlayerData.has(pick.roster_id)) {
-                    teamPlayerData.set(pick.roster_id, []);
-                }
-                teamPlayerData.get(pick.roster_id).push({
-                    ...player,
-                    pick_no: pick.pick_no,
-                    round: Math.ceil(pick.pick_no / users.length)
-                });
-            }
-        });
-    } else {
-        // Use current rosters (post-draft with transactions)
-        rosters.forEach(roster => {
-            if (roster.players) {
-                const players = roster.players.map(playerId => ({
-                    ...allPlayers[playerId],
-                    player_id: playerId
-                })).filter(p => p.player_id); // Filter out null players
-                teamPlayerData.set(roster.roster_id, players);
-            }
-        });
-    }
+    rosters.forEach(roster => {
+        if (roster.players) {
+            const players = roster.players.map(playerId => ({
+                ...allPlayers[playerId],
+                player_id: playerId
+            })).filter(p => p.player_id); // Filter out null players
+            teamPlayerData.set(roster.roster_id, players);
+        }
+    });
 
     // Render team cards
     container.innerHTML = '';
@@ -1034,9 +1022,11 @@ async function showTeamDetails(rosterId, userId) {
             const users = await fetchUsers();
             const allPlayers = await fetchAllPlayers();
             let draftPicks = [];
+            let draft = null;
             
             if (league && league.draft_id) {
                 draftPicks = await fetchDraftPicks(league.draft_id);
+                draft = await fetchDraftDetails(league.draft_id);
             }
 
             // Store in global cache
@@ -1045,7 +1035,8 @@ async function showTeamDetails(rosterId, userId) {
                 rosters,
                 users,
                 allPlayers,
-                draftPicks
+                draftPicks,
+                draft
             };
             
             data = globalLeagueData;
@@ -1072,20 +1063,10 @@ async function showTeamDetails(rosterId, userId) {
         // Update title
         detailTitle.textContent = teamName;
 
-        // Get team players
+        // Get team players - always use current roster (draft is complete)
         let teamPlayers = [];
         
-        if (league && league.draft_id && draftPicks.length > 0) {
-            // Use draft picks (make sure to use the numeric roster ID)
-            const teamDraftPicks = draftPicks.filter(pick => pick.roster_id === rosterIdNum);
-            teamPlayers = teamDraftPicks.map(pick => ({
-                ...allPlayers[pick.player_id],
-                pick_no: pick.pick_no,
-                round: Math.ceil(pick.pick_no / users.length),
-                source: 'draft'
-            })).filter(p => p.player_id);
-        } else if (roster.players) {
-            // Use current roster
+        if (roster.players) {
             teamPlayers = roster.players.map(playerId => ({
                 ...allPlayers[playerId],
                 player_id: playerId,
@@ -1099,7 +1080,7 @@ async function showTeamDetails(rosterId, userId) {
             teamName,
             avatarUrl,
             teamPlayers,
-            isDrafting: league?.status === 'drafting'
+            isDrafting: false
         });
 
     } catch (error) {
@@ -1138,7 +1119,7 @@ function renderTeamDetails(container, { user, roster, teamName, avatarUrl, teamP
 
         <div class="team-detail-card">
             <div class="roster-section">
-                <h4>${isDrafting ? 'Drafted Players' : 'Current Roster'} (${teamPlayers.length} players)</h4>
+                <h4>Current Roster (${teamPlayers.length} players)</h4>
                 ${Object.keys(playersByPosition).map(position => {
                     const posPlayers = playersByPosition[position];
                     if (posPlayers.length === 0) return '';
