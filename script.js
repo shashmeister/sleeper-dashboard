@@ -2483,6 +2483,32 @@ class PlayerSearch {
         console.log('Container visibility:', window.getComputedStyle(this.suggestionsContainer).visibility);
         console.log('Container height:', window.getComputedStyle(this.suggestionsContainer).height);
         
+        // Check positioning
+        const rect = this.suggestionsContainer.getBoundingClientRect();
+        console.log('Container position:', {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+            bottom: rect.bottom,
+            right: rect.right
+        });
+        
+        const inputRect = this.searchInput.getBoundingClientRect();
+        console.log('Input position:', {
+            top: inputRect.top,
+            left: inputRect.left,
+            width: inputRect.width,
+            height: inputRect.height,
+            bottom: inputRect.bottom
+        });
+        
+        // Check if container is in viewport
+        const isInViewport = rect.top >= 0 && rect.left >= 0 && 
+                           rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
+        console.log('Is in viewport:', isInViewport);
+        console.log('Window size:', { width: window.innerWidth, height: window.innerHeight });
+        
         this.suggestionItems = this.suggestionsContainer.querySelectorAll('.suggestion-item');
         this.currentSuggestionIndex = -1;
         
