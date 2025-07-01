@@ -1310,6 +1310,47 @@ h2 {
 }
 
 /* Player Search Page */
+.draft-disclaimer {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.1);
+}
+
+.disclaimer-content {
+    text-align: center;
+    color: #856404;
+}
+
+.disclaimer-content strong {
+    color: #6c5200;
+    font-size: 1.1em;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.disclaimer-content p {
+    margin: 0;
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+/* Dark mode styles for disclaimer */
+body.dark-mode .draft-disclaimer {
+    background: linear-gradient(135deg, #2d2a1f 0%, #3d3a2f 100%);
+    border-color: #b8860b;
+}
+
+body.dark-mode .disclaimer-content {
+    color: #f4d03f;
+}
+
+body.dark-mode .disclaimer-content strong {
+    color: #f7dc6f;
+}
+
 .search-controls {
     background-color: var(--card-bg);
     padding: 25px;
