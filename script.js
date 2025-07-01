@@ -1146,13 +1146,29 @@ async function displayTransactions() {
     try {
         container.innerHTML = '<p>Loading transactions...</p>';
         
-        // Get fresh data
-        const [transactions, users, rosters, allPlayers] = await Promise.all([
+        // Get fresh data including draft picks for player cross-referencing
+        const [transactions, users, rosters, allPlayers, league] = await Promise.all([
             fetchAllRecentTransactions(),
             fetchUsers(),
             fetchRosters(),
-            fetchAllPlayers()
+            fetchAllPlayers(),
+            fetchLeagueDetails()
         ]);
+
+        let draftPicks = [];
+        if (league && league.draft_id) {
+            draftPicks = await fetchDraftPicks(league.draft_id);
+        }
+
+        // Update global data to include draft picks for cross-referencing
+        globalLeagueData = {
+            ...globalLeagueData,
+            league,
+            rosters,
+            users,
+            allPlayers,
+            draftPicks
+        };
 
         if (transactions.length === 0) {
             container.innerHTML = '<p>No transactions found.</p>';
@@ -1325,9 +1341,24 @@ function renderTrade(transaction, usersMap, rostersByUserId, allPlayers) {
         if (transaction.draft_picks) {
             transaction.draft_picks.forEach(pick => {
                 if (pick.owner_id === rosterId) {
+                    // Try to find which player was drafted with this pick
+                    let playerDraftedInfo = '';
+                    if (globalLeagueData.draftPicks && pick.season === '2025') {
+                        // For current season picks, find the draft pick by round and current owner
+                        const draftedPick = globalLeagueData.draftPicks.find(dp => 
+                            dp.round === pick.round && 
+                            dp.roster_id === pick.owner_id
+                        );
+                        
+                        if (draftedPick && draftedPick.player_id && allPlayers[draftedPick.player_id]) {
+                            const player = allPlayers[draftedPick.player_id];
+                            playerDraftedInfo = ` (drafted ${player.full_name})`;
+                        }
+                    }
+                    
                     received.push({
                         type: 'pick',
-                        name: `${pick.season} Round ${pick.round} Pick`,
+                        name: `${pick.season} Round ${pick.round} Pick${playerDraftedInfo}`,
                         details: pick.previous_owner_id !== rosterId ? 'Acquired' : 'Original'
                     });
                 }
