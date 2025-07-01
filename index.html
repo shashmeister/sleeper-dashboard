@@ -35,18 +35,73 @@
         <button id="dark-mode-toggle">Toggle Dark Mode</button>
     </header>
     <nav class="site-nav">
-        <button class="nav-tab active" data-tab="startup-draft-page">Startup Draft</button>
+        <button class="nav-tab active" data-tab="dashboard-page">Dashboard</button>
+        <button class="nav-tab" data-tab="matchups-page">Matchups</button>
         <button class="nav-tab" data-tab="standings-page">Standings</button>
         <button class="nav-tab" data-tab="teams-page">Teams</button>
         <button class="nav-tab" data-tab="transactions-page">Transactions</button>
-        <button class="nav-tab" data-tab="matchups-page">Matchups</button>
         <button class="nav-tab" data-tab="player-search-page">Players</button>
-        <button class="nav-tab" data-tab="nfl-news-page">NFL News</button>
+        <button class="nav-tab" data-tab="history-page">Draft History</button>
     </nav>
     <main>
-        <div id="startup-draft-page" class="page-content">
+        <div id="dashboard-page" class="page-content">
+            <section id="current-week-overview-section">
+                <h2>This Week's Matchups</h2>
+                <div id="dashboard-current-matchups">
+                    <!-- Current week matchups will be loaded here -->
+                    <p>Loading this week's matchups...</p>
+                </div>
+            </section>
+
+            <section id="standings-preview-section">
+                <h2>Current Standings</h2>
+                <div id="dashboard-standings">
+                    <!-- Top standings will be loaded here -->
+                    <p>Loading standings...</p>
+                </div>
+                <div class="view-more-link">
+                    <button class="nav-link-btn" data-tab="standings-page">View Full Standings →</button>
+                </div>
+            </section>
+
+            <section id="recent-transactions-section">
+                <h2>Recent League Activity</h2>
+                <div id="dashboard-transactions">
+                    <!-- Recent transactions will be loaded here -->
+                    <p>Loading recent transactions...</p>
+                </div>
+                <div class="view-more-link">
+                    <button class="nav-link-btn" data-tab="transactions-page">View All Transactions →</button>
+                </div>
+            </section>
+
+            <section id="league-stats-section">
+                <h2>League Overview</h2>
+                <div id="dashboard-stats" class="stats-grid">
+                    <!-- League stats will be loaded here -->
+                    <div class="stat-card">
+                        <h4>Total Transactions</h4>
+                        <p id="total-transactions">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Highest Scorer</h4>
+                        <p id="highest-scorer">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Most Active Trader</h4>
+                        <p id="most-active-trader">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Avg Points/Week</h4>
+                        <p id="avg-points-week">-</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="history-page" class="page-content" style="display: none;">
             <section id="draft-progress-section">
-                <h2>Draft Progress</h2>
+                <h2>2024 Startup Draft</h2>
                 <div class="progress-bar-container">
                     <div class="progress-bar-fill" id="draft-progress-fill"></div>
                 </div>
@@ -54,7 +109,7 @@
             </section>
 
             <section id="recent-picks-section">
-                <h2>Recent Picks</h2>
+                <h2>Final Draft Picks</h2>
                 <ul id="recent-picks-list">
                     <!-- Recent picks will be loaded here by JavaScript -->
                     <li>Loading recent picks...</li>
@@ -67,7 +122,7 @@
             </div>
 
             <section id="drafted-by-team-section">
-                <h2>Drafted Players (By Team)</h2>
+                <h2>Draft Results (By Team)</h2>
                 <div id="teams-container">
                     <!-- Teams will be loaded here by JavaScript -->
                     <p>Loading teams...</p>
@@ -75,7 +130,7 @@
             </section>
 
             <section id="drafted-by-round-section" style="display:none;">
-                <h2>Drafted Players (By Round)</h2>
+                <h2>Draft Results (By Round)</h2>
                 <div id="players-by-round-container">
                     <!-- Players by round will be loaded here by JavaScript -->
                     <p>Loading players by round...</p>
@@ -277,15 +332,7 @@
             </section>
         </div>
 
-        <div id="nfl-news-page" class="page-content" style="display: none;">
-            <section id="news-section">
-                <h2>Latest News (NFL)</h2>
-                <div id="news-container">
-                    <!-- News articles will be loaded here by JavaScript -->
-                    <p>Loading news...</p>
-                </div>
-            </section>
-        </div>
+
     </main>
 
     <section id="error-log-section" style="display:none;">

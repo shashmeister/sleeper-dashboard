@@ -582,7 +582,9 @@ function setupTabNavigation() {
             tab.classList.add('active');
 
             // Load data based on tab
-            if (targetPageId === 'teams-page') {
+            if (targetPageId === 'dashboard-page') {
+                displayDashboard();
+            } else if (targetPageId === 'teams-page') {
                 displayTeamsOverview();
             } else if (targetPageId === 'standings-page') {
                 displayStandings();
@@ -590,6 +592,8 @@ function setupTabNavigation() {
                 displayTransactions();
             } else if (targetPageId === 'matchups-page') {
                 displayMatchups();
+            } else if (targetPageId === 'history-page') {
+                displayLeagueInfo(); // Show the original draft info
             }
         });
     });
@@ -1891,12 +1895,292 @@ function updateWeekDisplay() {
     }
 }
 
+// Dashboard Functions
+async function displayDashboard() {
+    try {
+        // Load all necessary data
+        const [league, rosters, users, allPlayers] = await Promise.all([
+            fetchLeagueDetails(),
+            fetchRosters(),
+            fetchUsers(), 
+            fetchAllPlayers()
+        ]);
+
+        // Store in global cache
+        if (!globalLeagueData.league) {
+            globalLeagueData = { league, rosters, users, allPlayers };
+        }
+
+        // Load dashboard components
+        await Promise.all([
+            loadDashboardMatchups(),
+            loadDashboardStandings(),
+            loadDashboardTransactions(),
+            loadDashboardStats()
+        ]);
+
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        logError('Dashboard Error', 'Failed to load dashboard data', { originalError: error.message });
+    }
+}
+
+async function loadDashboardMatchups() {
+    const container = document.getElementById('dashboard-current-matchups');
+    if (!container) return;
+
+    try {
+        // Get current week
+        const nflState = await fetch(`${SLEEPER_API_BASE}/state/nfl`).then(r => r.json());
+        const currentWeek = Math.max(1, nflState.week || 1);
+        
+        const [matchupsData, users, rosters] = await Promise.all([
+            fetchMatchups(currentWeek),
+            fetchUsers(),
+            fetchRosters()
+        ]);
+
+        if (matchupsData.length === 0) {
+            container.innerHTML = '<p>No matchups available for this week yet.</p>';
+            return;
+        }
+
+        // Create user and roster maps
+        const usersMap = users.reduce((map, user) => {
+            map[user.user_id] = user;
+            return map;
+        }, {});
+
+        const rostersByUserId = {};
+        rosters.forEach(roster => {
+            const owner = users.find(user => user.user_id === roster.owner_id);
+            if (owner) {
+                rostersByUserId[owner.user_id] = roster;
+            }
+        });
+
+        // Show only first 3 matchups for dashboard
+        const limitedMatchups = matchupsData.slice(0, 6); // Top 3 matchups (6 teams)
+        renderWeekMatchups(container, limitedMatchups, usersMap, rostersByUserId, currentWeek);
+
+    } catch (error) {
+        container.innerHTML = '<p>Error loading current matchups.</p>';
+        console.error('Dashboard matchups error:', error);
+    }
+}
+
+async function loadDashboardStandings() {
+    const container = document.getElementById('dashboard-standings');
+    if (!container) return;
+
+    try {
+        const { rosters, users } = globalLeagueData;
+        
+        if (!rosters || !users) {
+            container.innerHTML = '<p>Loading standings...</p>';
+            return;
+        }
+
+        const usersMap = new Map(users.map(user => [user.user_id, user]));
+        
+        // Calculate standings data (same logic as full standings)
+        const standingsData = rosters.map(roster => {
+            const user = usersMap.get(roster.owner_id);
+            const teamName = user?.metadata?.team_name || user?.display_name || 'Unnamed Team';
+            const avatarUrl = user?.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+            
+            const wins = roster.settings?.wins || 0;
+            const losses = roster.settings?.losses || 0;
+            const ties = roster.settings?.ties || 0;
+            const totalGames = wins + losses + ties;
+            const winPct = totalGames > 0 ? (wins + ties * 0.5) / totalGames : 0;
+            
+            const pointsFor = roster.settings?.fpts || 0;
+            
+            return {
+                teamName,
+                managerName: user?.display_name || 'Unknown',
+                avatarUrl,
+                wins,
+                losses,
+                ties,
+                winPct,
+                pointsFor
+            };
+        });
+
+        // Sort by win percentage, then by points for
+        standingsData.sort((a, b) => {
+            if (b.winPct !== a.winPct) {
+                return b.winPct - a.winPct;
+            }
+            return b.pointsFor - a.pointsFor;
+        });
+
+        // Show only top 5 teams for dashboard
+        const topTeams = standingsData.slice(0, 5);
+        
+        container.innerHTML = `
+            <div class="dashboard-standings-list">
+                ${topTeams.map((team, index) => {
+                    const rank = index + 1;
+                    const record = team.ties > 0 ? `${team.wins}-${team.losses}-${team.ties}` : `${team.wins}-${team.losses}`;
+                    
+                    return `
+                        <div class="dashboard-standings-item">
+                            <div class="standings-rank">${rank}</div>
+                            <div class="standings-team-info">
+                                ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.managerName} Avatar" class="avatar">` : ''}
+                                <div class="standings-team-details">
+                                    <div class="standings-team-name">${team.teamName}</div>
+                                    <div class="standings-record">${record} (${(team.winPct * 100).toFixed(0)}%)</div>
+                                </div>
+                            </div>
+                            <div class="standings-points">${team.pointsFor.toFixed(0)} pts</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+    } catch (error) {
+        container.innerHTML = '<p>Error loading standings preview.</p>';
+        console.error('Dashboard standings error:', error);
+    }
+}
+
+async function loadDashboardTransactions() {
+    const container = document.getElementById('dashboard-transactions');
+    if (!container) return;
+
+    try {
+        const [transactions, users, rosters, allPlayers] = await Promise.all([
+            fetchAllRecentTransactions(),
+            fetchUsers(),
+            fetchRosters(),
+            fetchAllPlayers()
+        ]);
+
+        if (transactions.length === 0) {
+            container.innerHTML = '<p>No recent transactions.</p>';
+            return;
+        }
+
+        // Create user and roster maps
+        const usersMap = users.reduce((map, user) => {
+            map[user.user_id] = user;
+            return map;
+        }, {});
+
+        const rostersByUserId = {};
+        rosters.forEach(roster => {
+            const owner = users.find(user => user.user_id === roster.owner_id);
+            if (owner) {
+                rostersByUserId[owner.user_id] = roster;
+            }
+        });
+
+        // Show only most recent 5 transactions
+        const recentTransactions = transactions.slice(0, 5);
+        renderTransactions(container, recentTransactions, usersMap, rostersByUserId, allPlayers);
+
+    } catch (error) {
+        container.innerHTML = '<p>Error loading recent transactions.</p>';
+        console.error('Dashboard transactions error:', error);
+    }
+}
+
+async function loadDashboardStats() {
+    try {
+        const [transactions, rosters, users] = await Promise.all([
+            fetchAllRecentTransactions(),
+            fetchRosters(),
+            fetchUsers()
+        ]);
+
+        // Calculate stats
+        const totalTransactions = transactions.length;
+        
+        // Find highest scorer
+        let highestScorer = { name: 'TBD', points: 0 };
+        if (rosters.length > 0) {
+            const highestScoringRoster = rosters.reduce((max, roster) => 
+                (roster.settings?.fpts || 0) > (max.settings?.fpts || 0) ? roster : max
+            );
+            const user = users.find(u => u.user_id === highestScoringRoster.owner_id);
+            highestScorer = {
+                name: user?.metadata?.team_name || user?.display_name || 'Unknown',
+                points: highestScoringRoster.settings?.fpts || 0
+            };
+        }
+
+        // Find most active trader
+        const tradesByUser = {};
+        transactions.filter(t => t.type === 'trade').forEach(trade => {
+            trade.roster_ids?.forEach(rosterId => {
+                const roster = rosters.find(r => r.roster_id === rosterId);
+                if (roster) {
+                    const userId = roster.owner_id;
+                    tradesByUser[userId] = (tradesByUser[userId] || 0) + 1;
+                }
+            });
+        });
+
+        let mostActiveTrader = { name: 'None yet', trades: 0 };
+        if (Object.keys(tradesByUser).length > 0) {
+            const topTraderId = Object.keys(tradesByUser).reduce((a, b) => 
+                tradesByUser[a] > tradesByUser[b] ? a : b
+            );
+            const user = users.find(u => u.user_id === topTraderId);
+            mostActiveTrader = {
+                name: user?.metadata?.team_name || user?.display_name || 'Unknown',
+                trades: tradesByUser[topTraderId]
+            };
+        }
+
+        // Calculate average points per week
+        const totalPoints = rosters.reduce((sum, roster) => sum + (roster.settings?.fpts || 0), 0);
+        const avgPointsPerWeek = rosters.length > 0 ? (totalPoints / rosters.length).toFixed(1) : '0';
+
+        // Update the dashboard
+        document.getElementById('total-transactions').textContent = totalTransactions;
+        document.getElementById('highest-scorer').textContent = `${highestScorer.name} (${highestScorer.points.toFixed(0)})`;
+        document.getElementById('most-active-trader').textContent = `${mostActiveTrader.name} (${mostActiveTrader.trades})`;
+        document.getElementById('avg-points-week').textContent = avgPointsPerWeek;
+
+    } catch (error) {
+        console.error('Dashboard stats error:', error);
+        // Set fallback values
+        document.getElementById('total-transactions').textContent = '-';
+        document.getElementById('highest-scorer').textContent = '-';
+        document.getElementById('most-active-trader').textContent = '-';
+        document.getElementById('avg-points-week').textContent = '-';
+    }
+}
+
+function setupNavLinkButtons() {
+    // Add event listeners for nav-link-btn buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('nav-link-btn')) {
+            const targetTab = e.target.getAttribute('data-tab');
+            if (targetTab) {
+                // Find and click the corresponding nav tab
+                const targetNavTab = document.querySelector(`[data-tab="${targetTab}"]`);
+                if (targetNavTab) {
+                    targetNavTab.click();
+                }
+            }
+        }
+    });
+}
+
 // Run the function when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    displayLeagueInfo();
+    displayDashboard(); // Load dashboard by default
     setupDarkModeToggle();
     setupTabNavigation();
     setupTeamNavigation();
+    setupNavLinkButtons();
 });
 
 // --- Error Logging Functions ---

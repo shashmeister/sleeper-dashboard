@@ -1684,5 +1684,159 @@ body.dark-mode .disclaimer-content strong {
     margin-bottom: 15px;
 }
 
+/* Dashboard Page Styles */
+.view-more-link {
+    text-align: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--section-border);
+}
+
+.nav-link-btn {
+    background: none;
+    border: none;
+    color: var(--heading-color);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    text-decoration: none;
+}
+
+.nav-link-btn:hover {
+    color: var(--button-hover-bg);
+    text-decoration: underline;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.stat-card {
+    background-color: var(--bg-primary);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid var(--card-border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h4 {
+    margin: 0 0 10px 0;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-card p {
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--heading-color);
+}
+
+/* Dashboard specific sections */
+#dashboard-current-matchups .matchup-card {
+    margin-bottom: 10px;
+}
+
+#dashboard-standings .standings-table {
+    margin-bottom: 0;
+}
+
+#dashboard-transactions .transaction-card {
+    margin-bottom: 10px;
+}
+
+/* Dashboard standings styles */
+.dashboard-standings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dashboard-standings-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--bg-primary);
+    border-radius: 6px;
+    border: 1px solid var(--card-border);
+    transition: transform 0.2s ease;
+}
+
+.dashboard-standings-item:hover {
+    transform: translateX(5px);
+}
+
+.standings-rank {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--heading-color);
+    margin-right: 15px;
+    min-width: 25px;
+}
+
+.standings-team-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.standings-team-info .avatar {
+    width: 30px;
+    height: 30px;
+}
+
+.standings-team-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.standings-team-name {
+    font-weight: bold;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.standings-record {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.standings-points {
+    font-weight: bold;
+    color: var(--heading-color);
+    min-width: 70px;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 15px;
+    }
+    
+    .stat-card p {
+        font-size: 1.4em;
+    }
+}
+
 
 
