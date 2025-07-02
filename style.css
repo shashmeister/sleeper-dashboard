@@ -2267,5 +2267,115 @@ body.dark-mode .disclaimer-content strong {
     pointer-events: none;
 }
 
+/* Dynasty Glossary */
+.dynasty-glossary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.glossary-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    gap: 15px;
+}
+
+.glossary-label {
+    font-weight: bold;
+    color: var(--text-primary);
+    min-width: 120px;
+}
+
+.glossary-description {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    flex: 1;
+}
+
+/* Age Leaderboard */
+.age-leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.age-leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: var(--bg-primary);
+    border-radius: 6px;
+    border: 1px solid var(--card-border);
+    transition: transform 0.2s ease;
+}
+
+.age-leaderboard-item:hover {
+    transform: translateX(5px);
+}
+
+.age-rank {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--heading-color);
+    margin-right: 15px;
+    min-width: 25px;
+}
+
+.age-team-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.age-team-info .avatar {
+    width: 30px;
+    height: 30px;
+}
+
+.age-team-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.age-team-name {
+    font-weight: bold;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.age-team-average {
+    font-weight: bold;
+    min-width: 70px;
+    text-align: right;
+    font-size: 1.1em;
+}
+
+@media (max-width: 768px) {
+    .dynasty-glossary {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .glossary-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        text-align: left;
+    }
+    
+    .glossary-label {
+        min-width: auto;
+    }
+}
+
 
 

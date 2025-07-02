@@ -1990,6 +1990,7 @@ async function displayDashboard() {
         await Promise.all([
             loadDashboardStandings(),
             loadDashboardTransactions(),
+            loadDashboardAgeLeaderboard(),
             loadDashboardStats()
         ]);
 
@@ -2119,6 +2120,75 @@ async function loadDashboardTransactions() {
     } catch (error) {
         container.innerHTML = '<p>Error loading recent transactions.</p>';
         console.error('Dashboard transactions error:', error);
+    }
+}
+
+async function loadDashboardAgeLeaderboard() {
+    const container = document.getElementById('dashboard-age-leaderboard');
+    if (!container) return;
+
+    try {
+        const { rosters, users, allPlayers } = globalLeagueData;
+        
+        if (!rosters || !users || !allPlayers) {
+            container.innerHTML = '<p>Loading team ages...</p>';
+            return;
+        }
+
+        const usersMap = new Map(users.map(user => [user.user_id, user]));
+        
+        // Calculate average ages for all teams
+        const ageData = rosters.map(roster => {
+            const user = usersMap.get(roster.owner_id);
+            const teamName = user?.metadata?.team_name || user?.display_name || 'Unnamed Team';
+            const avatarUrl = user?.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+            
+            // Get player objects for this roster
+            let teamPlayers = [];
+            if (roster.players) {
+                teamPlayers = roster.players
+                    .map(playerId => allPlayers[playerId])
+                    .filter(player => player);
+            }
+            
+            const avgAge = calculateTeamAverageAge(teamPlayers);
+            
+            return {
+                teamName,
+                managerName: user?.display_name || 'Unknown',
+                avatarUrl,
+                avgAge: avgAge === 'N/A' ? 999 : parseFloat(avgAge) // Put N/A teams at the end
+            };
+        }).filter(team => team.avgAge !== 999); // Remove teams with no age data
+
+        // Sort by average age (youngest first)
+        ageData.sort((a, b) => a.avgAge - b.avgAge);
+        
+        container.innerHTML = `
+            <div class="age-leaderboard-list">
+                ${ageData.map((team, index) => {
+                    const rank = index + 1;
+                    const ageColor = getAgeCategoryColor(team.avgAge);
+                    
+                    return `
+                        <div class="age-leaderboard-item">
+                            <div class="age-rank">${rank}</div>
+                            <div class="age-team-info">
+                                ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.managerName} Avatar" class="avatar">` : ''}
+                                <div class="age-team-details">
+                                    <div class="age-team-name">${team.teamName}</div>
+                                </div>
+                            </div>
+                            <div class="age-team-average" style="color: ${ageColor}" title="${getAgeCategoryLabel(team.avgAge)}">${team.avgAge}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+    } catch (error) {
+        container.innerHTML = '<p>Error loading age leaderboard.</p>';
+        console.error('Dashboard age leaderboard error:', error);
     }
 }
 
