@@ -1402,8 +1402,10 @@ h2 {
 }
 
 .week-selector button:disabled {
-    background-color: var(--text-muted-color);
+    background-color: transparent;
+    color: var(--text-secondary);
     cursor: not-allowed;
+    opacity: 0.8;
 }
 
 #current-week-display {
