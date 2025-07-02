@@ -921,31 +921,34 @@ h2 {
 
     .matchup-teams {
         flex-direction: column;
-        gap: 10px;
+        gap: 15px;
+        align-items: center;
     }
     
     .matchup-vs {
-        order: 1;
-        margin: 5px 0;
-        font-size: 0.9em;
+        font-size: 1em;
+        margin: 0;
+        order: 0; /* Keep vs in natural flow */
     }
     
     .matchup-team {
-        padding: 12px;
+        padding: 15px;
+        width: 100%;
+        max-width: 280px;
     }
     
     .matchup-team h4 {
-        font-size: 1em;
+        font-size: 1.1em;
     }
     
     .matchup-team .avatar {
-        width: 30px;
-        height: 30px;
+        width: 35px;
+        height: 35px;
     }
 
     .week-selector {
         gap: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     
     .week-selector button {
@@ -975,18 +978,20 @@ h2 {
 
     .week-matchup {
         flex-direction: column;
-        padding: 12px;
-        gap: 8px;
+        padding: 15px;
+        gap: 12px;
+        align-items: center;
     }
     
     .week-matchup .team-info {
         justify-content: center;
+        width: 100%;
     }
     
     .week-matchup-vs {
-        order: 1;
-        margin: 5px 0;
-        font-size: 0.85em;
+        font-size: 0.9em;
+        margin: 0;
+        order: 0; /* Keep vs in natural flow */
     }
 
     .search-input-group {
@@ -1121,6 +1126,18 @@ h2 {
     
     .page-content {
         padding: 0;
+    }
+    
+    /* Reduce spacing for matchup containers on mobile */
+    #current-matchups-container,
+    #schedule-container {
+        margin-top: 10px;
+        min-height: auto;
+    }
+    
+    #current-matchups-container p,
+    #schedule-container p {
+        margin: 10px 0;
     }
 }
 
