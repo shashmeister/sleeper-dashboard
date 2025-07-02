@@ -95,6 +95,22 @@ function calculateTeamAverageAge(teamPlayers) {
     return Math.round(avgAge * 10) / 10; // Round to 1 decimal place
 }
 
+function makeTeamNameClickable(teamName, rosterId, userId) {
+    return `<span class="clickable-team-name" data-roster-id="${rosterId}" data-user-id="${userId}" title="View team details">${teamName}</span>`;
+}
+
+function setupClickableTeamNames() {
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('clickable-team-name')) {
+            const rosterId = e.target.getAttribute('data-roster-id');
+            const userId = e.target.getAttribute('data-user-id');
+            if (rosterId && userId) {
+                showTeamDetails(rosterId, userId);
+            }
+        }
+    });
+}
+
 async function fetchAllPlayers() {
     const CACHE_KEY = 'allPlayersData';
     const TIMESTAMP_KEY = 'allPlayersTimestamp';
@@ -1453,7 +1469,7 @@ function renderTrade(transaction, usersMap, rostersByUserId, allPlayers) {
             });
         }
 
-        return { teamName, avatarUrl, received, rosterId };
+        return { teamName, avatarUrl, received, rosterId, userId: roster?.owner_id };
     });
 
     return `
@@ -1461,7 +1477,7 @@ function renderTrade(transaction, usersMap, rostersByUserId, allPlayers) {
             <div class="transaction-team">
                 <h4>
                     ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.teamName} Avatar" class="avatar">` : ''}
-                    ${team.teamName} Receives:
+                    ${makeTeamNameClickable(team.teamName, team.rosterId, team.userId)} Receives:
                 </h4>
                 <ul class="transaction-players">
                     ${team.received.length > 0 ? team.received.map(item => `
@@ -1520,7 +1536,7 @@ function renderWaiverOrFreeAgent(transaction, usersMap, rostersByUserId, allPlay
         <div class="transaction-team">
             <h4>
                 ${avatarUrl ? `<img src="${avatarUrl}" alt="${teamName} Avatar" class="avatar">` : ''}
-                ${teamName}
+                ${makeTeamNameClickable(teamName, rosterId, roster?.owner_id)}
             </h4>
             ${adds.length > 0 ? `
                 <ul class="transaction-players">
@@ -2038,7 +2054,9 @@ async function loadDashboardStandings() {
                 losses,
                 ties,
                 winPct,
-                pointsFor
+                pointsFor,
+                rosterId: roster.roster_id,
+                userId: roster.owner_id
             };
         });
 
@@ -2065,7 +2083,7 @@ async function loadDashboardStandings() {
                             <div class="standings-team-info">
                                 ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.managerName} Avatar" class="avatar">` : ''}
                                 <div class="standings-team-details">
-                                    <div class="standings-team-name">${team.teamName}</div>
+                                    <div class="standings-team-name">${makeTeamNameClickable(team.teamName, team.rosterId, team.userId)}</div>
                                     <div class="standings-record">${record} (${(team.winPct * 100).toFixed(0)}%)</div>
                                 </div>
                             </div>
@@ -2157,7 +2175,9 @@ async function loadDashboardAgeLeaderboard() {
                 teamName,
                 managerName: user?.display_name || 'Unknown',
                 avatarUrl,
-                avgAge: avgAge === 'N/A' ? 999 : parseFloat(avgAge) // Put N/A teams at the end
+                avgAge: avgAge === 'N/A' ? 999 : parseFloat(avgAge), // Put N/A teams at the end
+                rosterId: roster.roster_id,
+                userId: roster.owner_id
             };
         }).filter(team => team.avgAge !== 999); // Remove teams with no age data
 
@@ -2176,7 +2196,7 @@ async function loadDashboardAgeLeaderboard() {
                             <div class="age-team-info">
                                 ${team.avatarUrl ? `<img src="${team.avatarUrl}" alt="${team.managerName} Avatar" class="avatar">` : ''}
                                 <div class="age-team-details">
-                                    <div class="age-team-name">${team.teamName}</div>
+                                    <div class="age-team-name">${makeTeamNameClickable(team.teamName, team.rosterId, team.userId)}</div>
                                 </div>
                             </div>
                             <div class="age-team-average" style="color: ${ageColor}" title="${getAgeCategoryLabel(team.avgAge)}">${team.avgAge}</div>
@@ -2303,6 +2323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTabNavigation();
     setupTeamNavigation();
     setupNavLinkButtons();
+    setupClickableTeamNames();
 });
 
 // --- Error Logging Functions ---

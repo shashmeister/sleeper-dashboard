@@ -2270,7 +2270,7 @@ body.dark-mode .disclaimer-content strong {
 /* Dynasty Glossary */
 .dynasty-glossary {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
     margin-top: 20px;
 }
@@ -2278,23 +2278,33 @@ body.dark-mode .disclaimer-content strong {
 .glossary-item {
     display: flex;
     align-items: center;
-    padding: 15px;
+    justify-content: center;
+    padding: 12px 15px;
     background-color: var(--bg-primary);
     border-radius: 8px;
     border: 1px solid var(--card-border);
-    gap: 15px;
+    gap: 12px;
+    text-align: center;
 }
 
 .glossary-label {
     font-weight: bold;
     color: var(--text-primary);
-    min-width: 120px;
+    font-size: 0.95em;
 }
 
-.glossary-description {
-    color: var(--text-secondary);
-    font-size: 0.9em;
-    flex: 1;
+/* Desktop improvements */
+@media (min-width: 769px) {
+    .dynasty-glossary {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+    
+    .glossary-item {
+        flex-direction: column;
+        gap: 8px;
+        padding: 15px 10px;
+    }
 }
 
 /* Age Leaderboard */
@@ -2375,6 +2385,19 @@ body.dark-mode .disclaimer-content strong {
     .glossary-label {
         min-width: auto;
     }
+}
+
+/* Clickable Team Names */
+.clickable-team-name {
+    color: var(--heading-color);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    text-decoration: none;
+}
+
+.clickable-team-name:hover {
+    color: var(--button-hover-bg);
+    text-decoration: underline;
 }
 
 
