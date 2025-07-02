@@ -3123,9 +3123,7 @@ function getBenchPlayers(roster, allPlayers, league) {
     const starters = roster.starters || [];
     const allRosterPlayers = roster.players || [];
     
-    console.log(`Team ${roster.roster_id} - Total roster players: ${allRosterPlayers.length}, Starters: ${starters.length}`);
-    
-    const benchPlayers = allRosterPlayers
+    return allRosterPlayers
         .filter(playerId => !starters.includes(playerId))
         .map(playerId => allPlayers[playerId])
         .filter(player => player) // Remove any null/undefined players
@@ -3138,16 +3136,6 @@ function getBenchPlayers(roster, allPlayers, league) {
             if (aPos !== bPos) return aPos - bPos;
             return (a.full_name || '').localeCompare(b.full_name || '');
         });
-    
-    console.log(`Team ${roster.roster_id} - Bench players found: ${benchPlayers.length}`);
-    
-    // Log any missing players
-    const missingPlayers = allRosterPlayers.filter(playerId => !allPlayers[playerId]);
-    if (missingPlayers.length > 0) {
-        console.log(`Team ${roster.roster_id} - Missing player data for IDs:`, missingPlayers);
-    }
-    
-    return benchPlayers;
 }
 
 function renderStartingPositions(startingLineup) {

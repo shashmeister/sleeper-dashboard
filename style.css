@@ -2695,7 +2695,7 @@ body.dark-mode .bench-count {
 }
 
 .bench-section.expanded .bench-players {
-    max-height: 800px; /* Large enough to accommodate most benches */
+    max-height: 1500px; /* Increased for dynasty leagues with large benches (up to ~30 players) */
     opacity: 1;
     transition: max-height 0.3s ease-in, opacity 0.3s ease-in;
 }
