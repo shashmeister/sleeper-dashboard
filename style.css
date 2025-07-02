@@ -15,6 +15,8 @@
     --button-bg: #007bff;
     --button-hover-bg: #0056b3;
     --button-active-bg: #28a745;
+    --accent-color: #007bff;
+    --accent-hover: #0056b3;
     --card-bg: #f8f8f8;
     --card-heading: #2c3e50;
     --card-border: #e0e7eb;
@@ -37,6 +39,8 @@ body.dark-mode {
     --button-bg: #63b3ed;
     --button-hover-bg: #4299e1;
     --button-active-bg: #48bb78;
+    --accent-color: #63b3ed;
+    --accent-hover: #4299e1;
     --card-bg: #4a5568;
     --card-heading: #e2e8f0;
     --card-border: #636b6f;
@@ -2416,17 +2420,32 @@ body.dark-mode .disclaimer-content strong {
 
 .lineup-controls button {
     padding: 8px 16px;
-    background: var(--accent-color);
-    color: white;
-    border: none;
+    background: #2563eb; /* Solid blue for consistent visibility */
+    color: #ffffff;
+    border: 1px solid #1d4ed8;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    transition: background-color 0.2s;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .lineup-controls button:hover {
-    background: var(--accent-hover);
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark mode specific styling for lineup controls */
+body.dark-mode .lineup-controls button {
+    background: #3b82f6;
+    border: 1px solid #2563eb;
+    color: #ffffff;
+}
+
+body.dark-mode .lineup-controls button:hover {
+    background: #2563eb;
 }
 
 .team-lineup-card {
@@ -2499,8 +2518,8 @@ body.dark-mode .disclaimer-content strong {
 }
 
 .bench-count {
-    background: var(--accent-color); /* Use accent color for better visibility */
-    color: white; /* Pure white text for maximum contrast */
+    background: #2563eb; /* Solid blue background for consistent contrast */
+    color: #ffffff; /* Pure white text for maximum contrast */
     padding: 3px 7px;
     border-radius: 12px;
     font-size: 11px;
@@ -2508,7 +2527,15 @@ body.dark-mode .disclaimer-content strong {
     margin-left: 8px;
     min-width: 18px; /* Ensure minimum width for single digits */
     text-align: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Add subtle shadow */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Stronger shadow for definition */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border for definition */
+}
+
+/* Dark mode specific styling for bench count */
+body.dark-mode .bench-count {
+    background: #3b82f6; /* Brighter blue for dark mode */
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .starting-lineup {
@@ -2648,8 +2675,6 @@ body.dark-mode .disclaimer-content strong {
     font-size: 14px;
     color: var(--text-primary);
 }
-
-
 
 .expand-icon {
     font-size: 12px;
