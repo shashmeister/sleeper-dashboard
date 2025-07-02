@@ -277,22 +277,70 @@ async function fetchLeagueDetails() {
 
 async function fetchRosters() {
     try {
-        const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}/rosters`);
+        console.log('Fetching rosters...');
+        console.log('Rosters API endpoint:', `${SLEEPER_API_BASE}/league/${LEAGUE_ID}/rosters`);
+        
+        const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}/rosters`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Rosters response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch rosters: ${response.status} ${response.statusText}`);
+        }
         const rosters = await response.json();
+        console.log('Successfully fetched', rosters.length, 'rosters');
         return rosters;
     } catch (error) {
-        logError('API Error', 'Error fetching rosters', { originalError: error.message });
+        console.error('Detailed rosters fetch error:', error);
+        console.error('Error type:', error.name);
+        console.error('Error message:', error.message);
+        
+        logError('API Error', 'Failed to fetch rosters', { 
+            originalError: error.message,
+            errorType: error.name,
+            endpoint: `${SLEEPER_API_BASE}/league/${LEAGUE_ID}/rosters`
+        });
         return [];
     }
 }
 
 async function fetchUsers() {
     try {
-        const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}/users`);
+        console.log('Fetching users...');
+        console.log('Users API endpoint:', `${SLEEPER_API_BASE}/league/${LEAGUE_ID}/users`);
+        
+        const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}/users`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Users response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
+        }
         const users = await response.json();
+        console.log('Successfully fetched', users.length, 'users');
         return users;
     } catch (error) {
-        logError('API Error', 'Error fetching users', { originalError: error.message });
+        console.error('Detailed users fetch error:', error);
+        console.error('Error type:', error.name);
+        console.error('Error message:', error.message);
+        
+        logError('API Error', 'Failed to fetch users', { 
+            originalError: error.message,
+            errorType: error.name,
+            endpoint: `${SLEEPER_API_BASE}/league/${LEAGUE_ID}/users`
+        });
         return [];
     }
 }
@@ -1596,14 +1644,36 @@ const TOTAL_WEEKS = 17;
 
 async function fetchMatchups(week) {
     try {
-        const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}/matchups/${week}`);
+        console.log('Fetching matchups for week', week);
+        console.log('API endpoint:', `${SLEEPER_API_BASE}/league/${LEAGUE_ID}/matchups/${week}`);
+        
+        const response = await fetch(`${SLEEPER_API_BASE}/league/${LEAGUE_ID}/matchups/${week}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Matchups response status:', response.status);
+        console.log('Matchups response headers:', response.headers);
+        
         if (!response.ok) {
-            throw new Error(`Failed to fetch matchups for week ${week}: ${response.status}`);
+            throw new Error(`Failed to fetch matchups for week ${week}: ${response.status} ${response.statusText}`);
         }
         const matchups = await response.json();
+        console.log('Successfully fetched', matchups.length, 'matchups for week', week);
         return matchups || [];
     } catch (error) {
-        logError('API Error', `Error fetching matchups for week ${week}`, { originalError: error.message });
+        console.error('Detailed matchups fetch error:', error);
+        console.error('Error type:', error.name);
+        console.error('Error message:', error.message);
+        
+        logError('API Error', `Error fetching matchups for week ${week}`, { 
+            originalError: error.message,
+            errorType: error.name,
+            endpoint: `${SLEEPER_API_BASE}/league/${LEAGUE_ID}/matchups/${week}`
+        });
         return [];
     }
 }
@@ -1616,7 +1686,26 @@ async function displayMatchups() {
 
     try {
         // Set current week based on NFL state or default to 1
-        const nflState = await fetch(`${SLEEPER_API_BASE}/state/nfl`).then(r => r.json());
+        console.log('Fetching NFL state...');
+        console.log('NFL state endpoint:', `${SLEEPER_API_BASE}/state/nfl`);
+        
+        const nflStateResponse = await fetch(`${SLEEPER_API_BASE}/state/nfl`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('NFL state response status:', nflStateResponse.status);
+        
+        if (!nflStateResponse.ok) {
+            throw new Error(`Failed to fetch NFL state: ${nflStateResponse.status} ${nflStateResponse.statusText}`);
+        }
+        
+        const nflState = await nflStateResponse.json();
+        console.log('NFL state data:', nflState);
+        
         currentWeek = Math.max(1, nflState.week || 1);
         
         // Update week display
@@ -1632,9 +1721,16 @@ async function displayMatchups() {
         setupMatchupNavigation();
         
     } catch (error) {
+        console.error('Detailed displayMatchups error:', error);
+        console.error('Error type:', error.name);
+        console.error('Error message:', error.message);
+        
         container.innerHTML = '<p>Error loading matchups. Please try again.</p>';
         scheduleContainer.innerHTML = '<p>Error loading schedule. Please try again.</p>';
-        logError('Matchups Error', 'Failed to display matchups', { originalError: error.message });
+        logError('Matchups Error', 'Failed to display matchups', { 
+            originalError: error.message,
+            errorType: error.name
+        });
     }
 }
 
@@ -2339,6 +2435,9 @@ function setupNavLinkButtons() {
 
 // Run the function when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Run network test first to help debug any connectivity issues
+    testNetworkConnectivity();
+    
     displayDashboard(); // Load dashboard by default
     setupDarkModeToggle();
     setupTabNavigation();
@@ -2846,3 +2945,64 @@ class PlayerSearch {
 
 // Initialize player search when DOM is ready
 const playerSearch = new PlayerSearch();
+
+// --- Network Connectivity Test ---
+
+async function testNetworkConnectivity() {
+    console.log('=== NETWORK CONNECTIVITY TEST ===');
+    
+    // Test 1: Basic fetch to a public API
+    try {
+        console.log('Testing basic HTTP connectivity...');
+        const testResponse = await fetch('https://httpbin.org/get', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        console.log('Basic HTTP test status:', testResponse.status);
+        if (testResponse.ok) {
+            console.log('✅ Basic HTTP connectivity: WORKING');
+        } else {
+            console.log('❌ Basic HTTP connectivity: FAILED');
+        }
+    } catch (error) {
+        console.log('❌ Basic HTTP connectivity: FAILED -', error.message);
+    }
+    
+    // Test 2: Test Sleeper API base connectivity
+    try {
+        console.log('Testing Sleeper API connectivity...');
+        const sleeperTestResponse = await fetch(`${SLEEPER_API_BASE}/state/nfl`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        console.log('Sleeper API test status:', sleeperTestResponse.status);
+        if (sleeperTestResponse.ok) {
+            console.log('✅ Sleeper API connectivity: WORKING');
+        } else {
+            console.log('❌ Sleeper API connectivity: FAILED');
+        }
+    } catch (error) {
+        console.log('❌ Sleeper API connectivity: FAILED -', error.message);
+        console.log('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+    }
+    
+    // Test 3: Browser environment info
+    console.log('Browser info:', {
+        userAgent: navigator.userAgent,
+        online: navigator.onLine,
+        cookieEnabled: navigator.cookieEnabled,
+        doNotTrack: navigator.doNotTrack
+    });
+    
+    console.log('=== END NETWORK CONNECTIVITY TEST ===');
+}
+
+// --- End Network Connectivity Test ---
