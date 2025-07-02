@@ -2452,33 +2452,63 @@ body.dark-mode .disclaimer-content strong {
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 2px solid var(--section-border);
+    border-bottom: 1px solid var(--section-border);
+    min-height: 60px; /* Ensure consistent header height */
 }
 
 .team-lineup-header .avatar {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    margin-right: 15px;
+    margin-right: 12px;
+    object-fit: cover;
+    border: 2px solid var(--section-border);
+    flex-shrink: 0; /* Prevent avatar from shrinking */
+}
+
+.team-lineup-info {
+    flex: 1;
+    min-width: 0; /* Allow text truncation */
+    overflow: hidden;
 }
 
 .team-lineup-info h3 {
-    margin: 0;
-    font-size: 18px;
-    color: var(--text-primary);
-}
-
-.team-lineup-info .manager-name {
-    color: var(--text-secondary);
-    font-size: 14px;
-    margin-top: 2px;
-}
-
-.team-lineup-info .record {
-    color: var(--accent-color);
-    font-size: 12px;
+    margin: 0 0 4px 0;
+    font-size: 16px;
     font-weight: 600;
-    margin-top: 4px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis for long team names */
+    line-height: 1.2;
+}
+
+.manager-name {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis for long manager names */
+}
+
+.record {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.bench-count {
+    background: var(--accent-color); /* Use accent color for better visibility */
+    color: white; /* Pure white text for maximum contrast */
+    padding: 3px 7px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600; /* Make text bolder */
+    margin-left: 8px;
+    min-width: 18px; /* Ensure minimum width for single digits */
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Add subtle shadow */
 }
 
 .starting-lineup {
@@ -2619,14 +2649,7 @@ body.dark-mode .disclaimer-content strong {
     color: var(--text-primary);
 }
 
-.bench-count {
-    background: var(--text-secondary);
-    color: var(--bg-color);
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 11px;
-    margin-left: 8px;
-}
+
 
 .expand-icon {
     font-size: 12px;
