@@ -3075,7 +3075,7 @@ function renderLiveLineups(container, { allPlayers, rosters, users, league }) {
                 </div>
                 
                 <div class="bench-section" data-roster-id="${roster.roster_id}">
-                    <div class="bench-header">
+                    <div class="bench-header" data-roster-id="${roster.roster_id}">
                         <div class="bench-title">
                             Bench
                             <span class="bench-count">${benchPlayers.length}</span>
@@ -3091,7 +3091,11 @@ function renderLiveLineups(container, { allPlayers, rosters, users, league }) {
     }).join('');
 
     container.innerHTML = teamCards;
+    
+    // Setup controls after rendering
+    console.log('Setting up lineup controls and bench toggles...');
     setupLineupControls();
+    setupBenchToggles();
 }
 
 function getStartingLineup(roster, allPlayers, league) {
@@ -3191,63 +3195,150 @@ function renderPlayerSlot(player, position, isStarting = true) {
 function getPlayerImageHtml(player, size = 'starting') {
     const imageUrl = getPlayerImageUrl(player);
     const className = size === 'bench' ? 'player-image' : 'player-image';
+    const initials = getPlayerInitials(player);
     
     if (imageUrl) {
-        return `<img src="${imageUrl}" alt="${player.full_name}" class="${className}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="player-image placeholder" style="display:none;">${(player.full_name || 'UK').substring(0, 2).toUpperCase()}</div>`;
+        return `
+            <img src="${imageUrl}" 
+                 alt="${player.full_name}" 
+                 class="${className}" 
+                 onerror="handleImageError(this, ${JSON.stringify(player).replace(/"/g, '&quot;')})">
+        `;
     } else {
-        return `<div class="player-image placeholder">${(player.full_name || 'UK').substring(0, 2).toUpperCase()}</div>`;
+        // Create placeholder div when no image URL is available
+        return `
+            <div class="player-image placeholder" title="${player.full_name}">
+                ${initials}
+            </div>
+        `;
     }
 }
+
+// ==================================================
+// PLAYER IMAGE FUNCTIONALITY 
+// ==================================================
+// 
+// IMPORTANT: API Compliance Notice
+// This function attempts to load player images from various sources.
+// ESPN and other sports media companies have strict terms of service
+// regarding image usage. We should only use images that are:
+// 1. Publicly available without copyright restrictions, OR
+// 2. Properly licensed for our use, OR  
+// 3. From APIs that explicitly allow redistribution
+//
+// Current approach uses fallback hierarchy with error handling
+// ==================================================
 
 function getPlayerImageUrl(player) {
     if (!player) return null;
     
-    // Try ESPN player headshots first (most reliable free option)
+    // Try Sleeper's own player images (most appropriate since we're using their API)
+    if (player.player_id) {
+        return `https://sleepercdn.com/content/nfl/players/thumb/${player.player_id}.jpg`;
+    }
+    
+    // ESPN images have strict usage terms - only use if absolutely necessary
+    // and for non-commercial purposes only
     if (player.espn_id) {
         return `https://a.espncdn.com/i/headshots/nfl/players/full/${player.espn_id}.png`;
     }
     
-    // Fallback to Yahoo Sports (also pretty reliable)
+    // Alternative: Try Yahoo Sports (also check their terms)
     if (player.yahoo_id) {
         return `https://s.yimg.com/iu/api/res/1.2/player/${player.yahoo_id}.png`;
     }
     
-    // Try constructing from player name and team as last resort
-    if (player.full_name && player.team) {
-        const nameForUrl = player.full_name.toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, '-');
-        return `https://sleepercdn.com/content/nfl/players/thumb/${player.player_id}.jpg`;
-    }
-    
+    // Return null if no suitable image source found
     return null;
 }
 
+function handleImageError(imgElement, player) {
+    // Create a placeholder div
+    const initials = getPlayerInitials(player);
+    const placeholder = document.createElement('div');
+    placeholder.className = 'player-image placeholder';
+    placeholder.title = player.full_name || 'Unknown Player';
+    placeholder.textContent = initials;
+    
+    // Replace the failed image with the placeholder
+    imgElement.parentNode.replaceChild(placeholder, imgElement);
+}
+
+function getPlayerInitials(player) {
+    if (!player || !player.full_name) return '??';
+    
+    const nameParts = player.full_name.split(' ');
+    if (nameParts.length >= 2) {
+        return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    }
+    return player.full_name.substring(0, 2).toUpperCase();
+}
+
 function setupLineupControls() {
+    console.log('Setting up lineup controls...');
     const expandAllBtn = document.getElementById('expand-all-benches');
     const collapseAllBtn = document.getElementById('collapse-all-benches');
 
     if (expandAllBtn) {
-        expandAllBtn.addEventListener('click', () => {
+        // Remove existing listeners
+        expandAllBtn.replaceWith(expandAllBtn.cloneNode(true));
+        const newExpandBtn = document.getElementById('expand-all-benches');
+        
+        newExpandBtn.addEventListener('click', () => {
+            console.log('Expand all clicked');
             document.querySelectorAll('.bench-section').forEach(section => {
                 section.classList.add('expanded');
+                const icon = section.querySelector('.expand-icon');
+                if (icon) icon.textContent = '▲';
             });
         });
     }
 
     if (collapseAllBtn) {
-        collapseAllBtn.addEventListener('click', () => {
+        // Remove existing listeners  
+        collapseAllBtn.replaceWith(collapseAllBtn.cloneNode(true));
+        const newCollapseBtn = document.getElementById('collapse-all-benches');
+        
+        newCollapseBtn.addEventListener('click', () => {
+            console.log('Collapse all clicked');
             document.querySelectorAll('.bench-section').forEach(section => {
                 section.classList.remove('expanded');
+                const icon = section.querySelector('.expand-icon');
+                if (icon) icon.textContent = '▼';
             });
         });
     }
 }
 
 function setupBenchToggles() {
+    console.log('Setting up bench toggles...');
+    
+    // Remove any existing listeners to prevent duplicates
     document.querySelectorAll('.bench-header').forEach(header => {
-        header.addEventListener('click', () => {
+        // Clone node to remove all existing event listeners
+        const newHeader = header.cloneNode(true);
+        header.parentNode.replaceChild(newHeader, header);
+    });
+    
+    // Add new event listeners
+    document.querySelectorAll('.bench-header').forEach(header => {
+        console.log('Adding click listener to bench header');
+        header.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('Bench header clicked');
             const benchSection = header.closest('.bench-section');
-            benchSection.classList.toggle('expanded');
+            if (benchSection) {
+                benchSection.classList.toggle('expanded');
+                console.log('Toggled expanded class, now:', benchSection.classList.contains('expanded'));
+                
+                // Also update the icon
+                const icon = header.querySelector('.expand-icon');
+                if (icon) {
+                    icon.textContent = benchSection.classList.contains('expanded') ? '▲' : '▼';
+                }
+            }
         });
     });
 }

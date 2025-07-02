@@ -2436,6 +2436,10 @@ body.dark-mode .disclaimer-content strong {
     border: 1px solid var(--section-border);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    min-height: 400px; /* Ensure minimum consistent height */
 }
 
 .team-lineup-card:hover {
@@ -2479,6 +2483,7 @@ body.dark-mode .disclaimer-content strong {
 
 .starting-lineup {
     margin-bottom: 20px;
+    flex: 1; /* Take available space */
 }
 
 .starting-lineup h4 {
@@ -2497,7 +2502,7 @@ body.dark-mode .disclaimer-content strong {
 
 .lineup-positions {
     display: grid;
-    gap: 8px;
+    gap: 6px; /* Reduced gap for tighter layout */
 }
 
 .position-slot {
@@ -2507,7 +2512,8 @@ body.dark-mode .disclaimer-content strong {
     background: var(--bg-color);
     border-radius: 8px;
     border: 1px solid var(--section-border);
-    min-height: 50px;
+    min-height: 60px; /* Increased for better spacing */
+    overflow: hidden; /* Prevent text overflow */
 }
 
 .position-slot.filled {
@@ -2517,40 +2523,55 @@ body.dark-mode .disclaimer-content strong {
 
 .position-label {
     font-weight: 600;
-    font-size: 12px;
+    font-size: 11px; /* Slightly smaller for long positions */
     color: var(--text-secondary);
-    width: 35px;
+    width: 45px; /* Increased width for SUPER FLEX */
+    min-width: 45px; /* Ensure minimum width */
     text-align: center;
-    margin-right: 10px;
+    margin-right: 8px;
+    flex-shrink: 0; /* Prevent shrinking */
+    line-height: 1.1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .player-info {
     display: flex;
     align-items: center;
     flex: 1;
+    min-width: 0; /* Allow text truncation */
+    overflow: hidden;
 }
 
 .player-image {
-    width: 35px;
-    height: 35px;
+    width: 40px; /* Slightly larger for better quality */
+    height: 40px;
     border-radius: 50%;
     margin-right: 10px;
     object-fit: cover;
     border: 2px solid var(--section-border);
+    flex-shrink: 0; /* Prevent image shrinking */
 }
 
 .player-image.placeholder {
-    background: var(--section-border);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    border: 2px solid var(--section-border);
+    flex-shrink: 0;
 }
 
 .player-details {
     flex: 1;
+    min-width: 0; /* Allow text truncation */
+    overflow: hidden;
 }
 
 .player-name {
@@ -2559,99 +2580,93 @@ body.dark-mode .disclaimer-content strong {
     color: var(--text-primary);
     margin: 0;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis for long names */
 }
 
 .player-team-pos {
     font-size: 12px;
     color: var(--text-secondary);
     margin: 2px 0 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .bench-section {
     margin-top: 15px;
+    border-top: 1px solid var(--section-border);
+    padding-top: 15px;
 }
 
 .bench-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 10px;
-    background: var(--bg-color);
-    border-radius: 8px;
+    align-items: center;
     cursor: pointer;
-    border: 1px solid var(--section-border);
-    transition: background-color 0.2s;
+    padding: 8px 0;
+    transition: color 0.2s;
 }
 
 .bench-header:hover {
-    background: var(--card-bg);
+    color: var(--accent-color);
 }
 
 .bench-title {
     font-weight: 600;
     font-size: 14px;
     color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.bench-title::before {
-    content: "🪑";
-    font-size: 12px;
 }
 
 .bench-count {
-    background: var(--accent-color);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
+    background: var(--text-secondary);
+    color: var(--bg-color);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 8px;
 }
 
 .expand-icon {
-    transition: transform 0.2s;
     font-size: 12px;
+    color: var(--text-secondary);
+    transition: transform 0.2s, color 0.2s;
 }
 
 .bench-section.expanded .expand-icon {
     transform: rotate(180deg);
+    color: var(--accent-color);
 }
 
 .bench-players {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    opacity: 0;
 }
 
 .bench-section.expanded .bench-players {
-    max-height: 500px;
-    padding-top: 10px;
+    max-height: 800px; /* Large enough to accommodate most benches */
+    opacity: 1;
+    transition: max-height 0.3s ease-in, opacity 0.3s ease-in;
 }
 
 .bench-player {
     display: flex;
     align-items: center;
-    padding: 6px 10px;
-    margin-bottom: 4px;
-    background: var(--card-bg);
-    border-radius: 6px;
-    border: 1px solid var(--section-border);
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(var(--section-border-rgb), 0.3);
+}
+
+.bench-player:last-child {
+    border-bottom: none;
 }
 
 .bench-player .player-image {
-    width: 25px;
-    height: 25px;
-    margin-right: 8px;
-}
-
-.bench-player .player-name {
-    font-size: 13px;
-}
-
-.bench-player .player-team-pos {
-    font-size: 11px;
+    width: 32px;
+    height: 32px;
+    margin-right: 10px;
 }
 
 /* Mobile responsive adjustments for live lineups */
