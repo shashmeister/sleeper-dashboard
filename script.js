@@ -42,6 +42,59 @@ function setInDB(db, key, value) {
 
 // --- End IndexedDB Caching Utilities ---
 
+// --- Player Age Utility Functions ---
+
+function getAgeCategory(age) {
+    if (!age || age === 'N/A') return 'unknown';
+    const ageNum = parseInt(age);
+    if (ageNum < 25) return 'young';      // Prime dynasty assets
+    if (ageNum <= 28) return 'prime';     // Peak performance window  
+    if (ageNum <= 31) return 'veteran';   // Still productive but aging
+    return 'old';                         // Likely declining
+}
+
+function getAgeCategoryColor(age) {
+    const category = getAgeCategory(age);
+    const colors = {
+        young: '#22c55e',    // Green - buy/hold
+        prime: '#3b82f6',    // Blue - peak value
+        veteran: '#f59e0b',  // Yellow - caution
+        old: '#ef4444',      // Red - sell
+        unknown: '#6b7280'   // Gray - unknown
+    };
+    return colors[category];
+}
+
+function getAgeCategoryLabel(age) {
+    const category = getAgeCategory(age);
+    const labels = {
+        young: 'Dynasty Asset',
+        prime: 'Peak Performance', 
+        veteran: 'Productive Vet',
+        old: 'Declining Asset',
+        unknown: 'Unknown Age'
+    };
+    return labels[category];
+}
+
+function formatPlayerAge(player) {
+    const age = player.age || 'N/A';
+    const color = getAgeCategoryColor(age);
+    if (age === 'N/A') {
+        return `<span class="player-age unknown" style="color: ${color}">Age ${age}</span>`;
+    }
+    return `<span class="player-age ${getAgeCategory(age)}" style="color: ${color}" title="${getAgeCategoryLabel(age)}">Age ${age}</span>`;
+}
+
+function calculateTeamAverageAge(teamPlayers) {
+    const playersWithAges = teamPlayers.filter(p => p.age && p.age !== 'N/A');
+    if (playersWithAges.length === 0) return 'N/A';
+    
+    const totalAge = playersWithAges.reduce((sum, player) => sum + parseInt(player.age), 0);
+    const avgAge = totalAge / playersWithAges.length;
+    return Math.round(avgAge * 10) / 10; // Round to 1 decimal place
+}
+
 async function fetchAllPlayers() {
     const CACHE_KEY = 'allPlayersData';
     const TIMESTAMP_KEY = 'allPlayersTimestamp';
@@ -980,6 +1033,12 @@ function renderTeamsOverview(container, data) {
         const avatarUrl = user.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
         const players = teamPlayerData.get(roster.roster_id) || [];
         
+        // Calculate team average age
+        const avgAge = calculateTeamAverageAge(players);
+        const avgAgeDisplay = avgAge !== 'N/A' ? 
+            `<span style="color: ${getAgeCategoryColor(avgAge)}" title="${getAgeCategoryLabel(avgAge)}">Avg Age: ${avgAge}</span>` : 
+            'Avg Age: N/A';
+        
         const teamCard = document.createElement('div');
         teamCard.classList.add('team-card', 'clickable');
         teamCard.setAttribute('data-roster-id', roster.roster_id);
@@ -991,6 +1050,7 @@ function renderTeamsOverview(container, data) {
                 <div>
                     <h3>${teamName}</h3>
                     <p>${user.display_name}</p>
+                    <p style="font-size: 0.9em; margin-top: 5px;">${avgAgeDisplay}</p>
                 </div>
             </div>
         `;
@@ -1110,6 +1170,12 @@ function renderTeamDetails(container, { user, roster, teamName, avatarUrl, teamP
         playersByPosition['OTHER'] = otherPlayers;
     }
 
+    // Calculate team average age
+    const avgAge = calculateTeamAverageAge(teamPlayers);
+    const avgAgeDisplay = avgAge !== 'N/A' ? 
+        `<span style="color: ${getAgeCategoryColor(avgAge)}" title="Team Average Age">${avgAge}</span>` : 
+        avgAge;
+
     container.innerHTML = `
         <div class="team-detail-card">
             <div class="team-detail-header">
@@ -1119,6 +1185,7 @@ function renderTeamDetails(container, { user, roster, teamName, avatarUrl, teamP
                     <p><strong>Manager:</strong> ${user.display_name}</p>
                     <p><strong>Record:</strong> ${roster.settings?.wins || 0}-${roster.settings?.losses || 0}${roster.settings?.ties ? `-${roster.settings.ties}` : ''}</p>
                     <p><strong>Points:</strong> ${roster.settings?.fpts || 0}</p>
+                    <p><strong>Average Age:</strong> ${avgAgeDisplay}</p>
                 </div>
             </div>
         </div>
@@ -1141,7 +1208,7 @@ function renderTeamDetails(container, { user, roster, teamName, avatarUrl, teamP
                                         </a>
                                     </div>
                                     <div class="player-details">
-                                        ${player.team || 'FA'} • ${player.position || 'N/A'}
+                                        ${player.team || 'FA'} • ${player.position || 'N/A'} • ${formatPlayerAge(player)}
                                         ${player.bye_week ? ` • Bye: ${player.bye_week}` : ''}
                                         ${player.pick_no ? ` • Pick ${player.pick_no} (Round ${player.round})` : ''}
                                     </div>
@@ -1361,10 +1428,12 @@ function renderTrade(transaction, usersMap, rostersByUserId, allPlayers) {
                 if (transaction.adds[playerId] === rosterId) {
                     const player = allPlayers[playerId];
                     if (player) {
+                        const age = player.age || 'N/A';
+                        const ageColor = getAgeCategoryColor(age);
                         received.push({
                             type: 'player',
                             name: player.full_name || 'Unknown Player',
-                            details: `${player.position || 'N/A'} - ${player.team || 'FA'}`
+                            details: `${player.position || 'N/A'} - ${player.team || 'FA'} - <span style="color: ${ageColor}">Age ${age}</span>`
                         });
                     }
                 }
@@ -1423,9 +1492,11 @@ function renderWaiverOrFreeAgent(transaction, usersMap, rostersByUserId, allPlay
         Object.keys(transaction.adds).forEach(playerId => {
             const player = allPlayers[playerId];
             if (player) {
+                const age = player.age || 'N/A';
+                const ageColor = getAgeCategoryColor(age);
                 adds.push({
                     name: player.full_name || 'Unknown Player',
-                    details: `${player.position || 'N/A'} - ${player.team || 'FA'}`
+                    details: `${player.position || 'N/A'} - ${player.team || 'FA'} - <span style="color: ${ageColor}">Age ${age}</span>`
                 });
             }
         });
@@ -1435,9 +1506,11 @@ function renderWaiverOrFreeAgent(transaction, usersMap, rostersByUserId, allPlay
         Object.keys(transaction.drops).forEach(playerId => {
             const player = allPlayers[playerId];
             if (player) {
+                const age = player.age || 'N/A';
+                const ageColor = getAgeCategoryColor(age);
                 drops.push({
                     name: player.full_name || 'Unknown Player',
-                    details: `${player.position || 'N/A'} - ${player.team || 'FA'}`
+                    details: `${player.position || 'N/A'} - ${player.team || 'FA'} - <span style="color: ${ageColor}">Age ${age}</span>`
                 });
             }
         });
@@ -2051,10 +2124,11 @@ async function loadDashboardTransactions() {
 
 async function loadDashboardStats() {
     try {
-        const [transactions, rosters, users] = await Promise.all([
+        const [transactions, rosters, users, allPlayers] = await Promise.all([
             fetchAllRecentTransactions(),
             fetchRosters(),
-            fetchUsers()
+            fetchUsers(),
+            fetchAllPlayers()
         ]);
 
         // Calculate stats
@@ -2097,15 +2171,34 @@ async function loadDashboardStats() {
             };
         }
 
-        // Calculate average points per week
-        const totalPoints = rosters.reduce((sum, roster) => sum + (roster.settings?.fpts || 0), 0);
-        const avgPointsPerWeek = rosters.length > 0 ? (totalPoints / rosters.length).toFixed(1) : '0';
+        // Find youngest team by average age
+        let youngestTeam = { name: 'TBD', avgAge: 100 };
+        if (rosters.length > 0 && allPlayers) {
+            for (const roster of rosters) {
+                if (!roster.players || roster.players.length === 0) continue;
+                
+                // Get player objects for this roster
+                const teamPlayers = roster.players
+                    .map(playerId => allPlayers[playerId])
+                    .filter(player => player);
+                
+                const avgAge = calculateTeamAverageAge(teamPlayers);
+                if (avgAge !== 'N/A' && avgAge < youngestTeam.avgAge) {
+                    const user = users.find(u => u.user_id === roster.owner_id);
+                    youngestTeam = {
+                        name: user?.metadata?.team_name || user?.display_name || 'Unknown',
+                        avgAge: avgAge
+                    };
+                }
+            }
+        }
 
         // Update the dashboard
         document.getElementById('total-transactions').textContent = totalTransactions;
         document.getElementById('highest-scorer').textContent = `${highestScorer.name} (${highestScorer.points.toFixed(0)})`;
         document.getElementById('most-active-trader').textContent = `${mostActiveTrader.name} (${mostActiveTrader.trades})`;
-        document.getElementById('avg-points-week').textContent = avgPointsPerWeek;
+        const youngestTeamDisplay = youngestTeam.avgAge === 100 ? 'TBD' : `${youngestTeam.name} (${youngestTeam.avgAge})`;
+        document.getElementById('youngest-team').textContent = youngestTeamDisplay;
 
     } catch (error) {
         console.error('Dashboard stats error:', error);
@@ -2113,7 +2206,7 @@ async function loadDashboardStats() {
         document.getElementById('total-transactions').textContent = '-';
         document.getElementById('highest-scorer').textContent = '-';
         document.getElementById('most-active-trader').textContent = '-';
-        document.getElementById('avg-points-week').textContent = '-';
+        document.getElementById('youngest-team').textContent = '-';
     }
 }
 
@@ -2464,11 +2557,13 @@ class PlayerSearch {
             const fullName = player.full_name || `${player.first_name || ''} ${player.last_name || ''}`.trim();
             const position = player.position || 'N/A';
             const team = player.team || 'FA';
+            const age = player.age || 'N/A';
+            const ageColor = getAgeCategoryColor(age);
             
             return `
                 <div class="suggestion-item" data-index="${index}" data-player-id="${player.player_id}">
                     <div class="suggestion-name">${fullName}</div>
-                    <div class="suggestion-details">${position} • ${team}</div>
+                    <div class="suggestion-details">${position} • ${team} • <span style="color: ${ageColor}">Age ${age}</span></div>
                 </div>
             `;
         }).join('');
