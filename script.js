@@ -425,7 +425,7 @@ async function displayLeagueInfo() {
             viewByTeamBtn.classList.remove('active');
             viewByRoundBtn.classList.add('active');
             // Render by round
-            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, { settings: { num_teams } }, rosters);
+            displayPlayersByRound(allPlayers, draftPicks, usersMap, rostersByUserIdMap, { settings: { num_teams: numTeams } }, rosters);
         });
 
         // Display Draft Details
