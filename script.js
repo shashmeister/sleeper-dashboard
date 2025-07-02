@@ -3219,37 +3219,17 @@ function getPlayerImageHtml(player, size = 'starting') {
 // ==================================================
 // 
 // IMPORTANT: API Compliance Notice
-// This function attempts to load player images from various sources.
-// ESPN and other sports media companies have strict terms of service
-// regarding image usage. We should only use images that are:
-// 1. Publicly available without copyright restrictions, OR
-// 2. Properly licensed for our use, OR  
-// 3. From APIs that explicitly allow redistribution
-//
-// Current approach uses fallback hierarchy with error handling
+// We only use Sleeper's CDN for player images since we're using their API.
+// This ensures compliance with terms of service and provides consistent
+// image quality. When no Sleeper image is available, we display clean
+// initial placeholders for a professional, consistent appearance.
 // ==================================================
 
 function getPlayerImageUrl(player) {
-    if (!player) return null;
+    if (!player || !player.player_id) return null;
     
-    // Try Sleeper's own player images (most appropriate since we're using their API)
-    if (player.player_id) {
-        return `https://sleepercdn.com/content/nfl/players/thumb/${player.player_id}.jpg`;
-    }
-    
-    // ESPN images have strict usage terms - only use if absolutely necessary
-    // and for non-commercial purposes only
-    if (player.espn_id) {
-        return `https://a.espncdn.com/i/headshots/nfl/players/full/${player.espn_id}.png`;
-    }
-    
-    // Alternative: Try Yahoo Sports (also check their terms)
-    if (player.yahoo_id) {
-        return `https://s.yimg.com/iu/api/res/1.2/player/${player.yahoo_id}.png`;
-    }
-    
-    // Return null if no suitable image source found
-    return null;
+    // Only use Sleeper's CDN - most appropriate since we're using their API
+    return `https://sleepercdn.com/content/nfl/players/thumb/${player.player_id}.jpg`;
 }
 
 function handleImageError(imgElement, player) {
