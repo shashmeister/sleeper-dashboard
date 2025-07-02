@@ -726,6 +726,8 @@ function setupTabNavigation() {
                 displayDashboard();
             } else if (targetPageId === 'teams-page') {
                 displayTeamsOverview();
+            } else if (targetPageId === 'live-lineups-page') {
+                displayLiveLineups();
             } else if (targetPageId === 'standings-page') {
                 displayStandings();
             } else if (targetPageId === 'transactions-page') {
@@ -3006,3 +3008,248 @@ async function testNetworkConnectivity() {
 }
 
 // --- End Network Connectivity Test ---
+
+// --- Live Lineups Functionality ---
+
+async function displayLiveLineups() {
+    const container = document.getElementById('live-lineups-container');
+    if (!container) return;
+
+    try {
+        container.innerHTML = '<p>Loading team lineups...</p>';
+
+        const [allPlayers, rosters, users, league] = await Promise.all([
+            fetchAllPlayers(),
+            fetchRosters(),
+            fetchUsers(),
+            fetchLeagueDetails()
+        ]);
+
+        if (rosters.length === 0 || users.length === 0) {
+            container.innerHTML = '<p>Unable to load lineup data. Please try again later.</p>';
+            return;
+        }
+
+        renderLiveLineups(container, { allPlayers, rosters, users, league });
+        setupLineupControls();
+
+    } catch (error) {
+        container.innerHTML = '<p>Error loading team lineups. Please try again.</p>';
+        logError('Live Lineups Error', 'Failed to display live lineups', { originalError: error.message });
+    }
+}
+
+function renderLiveLineups(container, { allPlayers, rosters, users, league }) {
+    const teamCards = rosters.map(roster => {
+        const user = users.find(u => u.user_id === roster.owner_id);
+        const teamName = user?.metadata?.team_name || user?.display_name || 'Unknown Team';
+        const managerName = user?.display_name || 'Unknown Manager';
+        const avatarUrl = user?.avatar ? `${SLEEPER_AVATAR_BASE}/${user.avatar}` : '';
+        
+        // Get team record
+        const wins = roster.settings?.wins || 0;
+        const losses = roster.settings?.losses || 0;
+        const ties = roster.settings?.ties || 0;
+        const record = ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
+
+        // Get starting lineup and bench
+        const startingLineup = getStartingLineup(roster, allPlayers, league);
+        const benchPlayers = getBenchPlayers(roster, allPlayers, league);
+
+        return `
+            <div class="team-lineup-card">
+                <div class="team-lineup-header">
+                    ${avatarUrl ? `<img src="${avatarUrl}" alt="${teamName} Avatar" class="avatar">` : ''}
+                    <div class="team-lineup-info">
+                        <h3>${makeTeamNameClickable(teamName, roster.roster_id, user?.user_id)}</h3>
+                        <div class="manager-name">${managerName}</div>
+                        <div class="record">Record: ${record}</div>
+                    </div>
+                </div>
+                
+                <div class="starting-lineup">
+                    <h4>Starting Lineup</h4>
+                    <div class="lineup-positions">
+                        ${renderStartingPositions(startingLineup)}
+                    </div>
+                </div>
+                
+                <div class="bench-section" data-roster-id="${roster.roster_id}">
+                    <div class="bench-header">
+                        <div class="bench-title">
+                            Bench
+                            <span class="bench-count">${benchPlayers.length}</span>
+                        </div>
+                        <span class="expand-icon">▼</span>
+                    </div>
+                    <div class="bench-players">
+                        ${renderBenchPlayers(benchPlayers)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = teamCards;
+    setupLineupControls();
+}
+
+function getStartingLineup(roster, allPlayers, league) {
+    const starters = roster.starters || [];
+    const rosterSettings = league.roster_positions || [];
+    
+    // Default roster positions for dynasty leagues
+    const defaultPositions = ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'TE', 'FLEX', 'DEF', 'K'];
+    const positions = rosterSettings.length > 0 ? rosterSettings : defaultPositions;
+    
+    return starters.map((playerId, index) => {
+        const player = allPlayers[playerId];
+        const position = positions[index] || 'FLEX';
+        
+        return {
+            playerId,
+            player,
+            position,
+            slotIndex: index
+        };
+    }).filter(slot => slot.player); // Only include filled slots
+}
+
+function getBenchPlayers(roster, allPlayers, league) {
+    const starters = roster.starters || [];
+    const allRosterPlayers = roster.players || [];
+    
+    return allRosterPlayers
+        .filter(playerId => !starters.includes(playerId))
+        .map(playerId => allPlayers[playerId])
+        .filter(player => player) // Remove any null/undefined players
+        .sort((a, b) => {
+            // Sort by position priority then by name
+            const positionOrder = { 'QB': 1, 'RB': 2, 'WR': 3, 'TE': 4, 'K': 5, 'DEF': 6 };
+            const aPos = positionOrder[a.position] || 7;
+            const bPos = positionOrder[b.position] || 7;
+            
+            if (aPos !== bPos) return aPos - bPos;
+            return (a.full_name || '').localeCompare(b.full_name || '');
+        });
+}
+
+function renderStartingPositions(startingLineup) {
+    if (startingLineup.length === 0) {
+        return '<div class="position-slot"><div class="position-label">-</div><div class="player-info">No lineup set</div></div>';
+    }
+
+    return startingLineup.map(slot => {
+        const { player, position } = slot;
+        return renderPlayerSlot(player, position, true);
+    }).join('');
+}
+
+function renderBenchPlayers(benchPlayers) {
+    if (benchPlayers.length === 0) {
+        return '<div class="bench-player">No bench players</div>';
+    }
+
+    return benchPlayers.map(player => `
+        <div class="bench-player">
+            ${getPlayerImageHtml(player, 'bench')}
+            <div class="player-details">
+                <div class="player-name">${formatPlayerAge(player)} ${player.full_name || 'Unknown Player'}</div>
+                <div class="player-team-pos">${player.team || 'FA'} • ${player.position || 'N/A'}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderPlayerSlot(player, position, isStarting = true) {
+    const slotClass = player ? 'position-slot filled' : 'position-slot';
+    const playerContent = player ? `
+        <div class="player-info">
+            ${getPlayerImageHtml(player, isStarting ? 'starting' : 'bench')}
+            <div class="player-details">
+                <div class="player-name">${formatPlayerAge(player)} ${player.full_name || 'Unknown Player'}</div>
+                <div class="player-team-pos">${player.team || 'FA'} • ${player.position || 'N/A'}</div>
+            </div>
+        </div>
+    ` : `
+        <div class="player-info">
+            <div class="player-image placeholder">?</div>
+            <div class="player-details">
+                <div class="player-name">Empty</div>
+            </div>
+        </div>
+    `;
+
+    return `
+        <div class="${slotClass}">
+            <div class="position-label">${position}</div>
+            ${playerContent}
+        </div>
+    `;
+}
+
+function getPlayerImageHtml(player, size = 'starting') {
+    const imageUrl = getPlayerImageUrl(player);
+    const className = size === 'bench' ? 'player-image' : 'player-image';
+    
+    if (imageUrl) {
+        return `<img src="${imageUrl}" alt="${player.full_name}" class="${className}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="player-image placeholder" style="display:none;">${(player.full_name || 'UK').substring(0, 2).toUpperCase()}</div>`;
+    } else {
+        return `<div class="player-image placeholder">${(player.full_name || 'UK').substring(0, 2).toUpperCase()}</div>`;
+    }
+}
+
+function getPlayerImageUrl(player) {
+    if (!player) return null;
+    
+    // Try ESPN player headshots first (most reliable free option)
+    if (player.espn_id) {
+        return `https://a.espncdn.com/i/headshots/nfl/players/full/${player.espn_id}.png`;
+    }
+    
+    // Fallback to Yahoo Sports (also pretty reliable)
+    if (player.yahoo_id) {
+        return `https://s.yimg.com/iu/api/res/1.2/player/${player.yahoo_id}.png`;
+    }
+    
+    // Try constructing from player name and team as last resort
+    if (player.full_name && player.team) {
+        const nameForUrl = player.full_name.toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, '-');
+        return `https://sleepercdn.com/content/nfl/players/thumb/${player.player_id}.jpg`;
+    }
+    
+    return null;
+}
+
+function setupLineupControls() {
+    const expandAllBtn = document.getElementById('expand-all-benches');
+    const collapseAllBtn = document.getElementById('collapse-all-benches');
+
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('.bench-section').forEach(section => {
+                section.classList.add('expanded');
+            });
+        });
+    }
+
+    if (collapseAllBtn) {
+        collapseAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('.bench-section').forEach(section => {
+                section.classList.remove('expanded');
+            });
+        });
+    }
+}
+
+function setupBenchToggles() {
+    document.querySelectorAll('.bench-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const benchSection = header.closest('.bench-section');
+            benchSection.classList.toggle('expanded');
+        });
+    });
+}
+
+// --- End Live Lineups Functionality ---
