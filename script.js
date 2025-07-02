@@ -136,11 +136,24 @@ async function fetchAllPlayers() {
 
     try {
         console.log('Fetching fresh players data from Sleeper API...');
-        const response = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
+        console.log('API endpoint:', `${SLEEPER_API_BASE}/players/nfl`);
+        
+        const response = await fetch(`${SLEEPER_API_BASE}/players/nfl`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
         if (!response.ok) {
-            throw new Error(`Failed to fetch players from Sleeper API: ${response.status}`);
+            throw new Error(`Failed to fetch players from Sleeper API: ${response.status} ${response.statusText}`);
         }
         const players = await response.json();
+        console.log('Successfully fetched', Object.keys(players).length, 'players');
 
         try {
             const db = await openDB();
@@ -154,7 +167,15 @@ async function fetchAllPlayers() {
         
         return players;
     } catch (fetchError) {
-        logError('Client-side Fetch Error', 'Error fetching all players from Sleeper API', { originalError: fetchError.message });
+        console.error('Detailed fetch error:', fetchError);
+        console.error('Error type:', fetchError.name);
+        console.error('Error message:', fetchError.message);
+        
+        logError('Client-side Fetch Error', 'Error fetching all players from Sleeper API', { 
+            originalError: fetchError.message,
+            errorType: fetchError.name,
+            endpoint: `${SLEEPER_API_BASE}/players/nfl`
+        });
         console.warn('API fetch failed. No fresh data available.');
         return {}; 
     }
